@@ -20,7 +20,9 @@ When instructed to build a feature:
 
 ## AI design
 
-There is an OPENROUTER_API_KEY in the .env file in the project root. Use the `openrouter/free` model.
+When writing code to make calls to LLMs, use your Cerebras skill to use LiteLLM via OpenRouter to the `openrouter/openai/gpt-oss-120b` model with Cerebras as the inference provider. You should use Structured Outputs so that you can interpret the results and populate fields in the legal document.
+
+There is an OPENROUTER_API_KEY in the .env file in the project root.
 
 ## Technical design
 
