@@ -7,6 +7,9 @@ services:
     container_name: prelegal
     ports:
       - "8000:8000"
+    # OPENROUTER_API_KEY for the AI intake chat. Read from the host at `up`
+    # time: .env is both git- and docker-ignored, so it never enters the image.
+    env_file: .env
     # No volume for the database: it lives in the container's writable layer, so
     # every `up` starts from an empty schema, per the V1 foundation design.
     restart: unless-stopped

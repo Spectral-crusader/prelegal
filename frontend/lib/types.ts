@@ -1,4 +1,13 @@
-// Shape of user input on the MNDA form. Mirrors the slots on Mutual-NDA-coverpage.md.
+// Two shapes, deliberately distinct:
+//
+//   MndaFields      — what the user has actually told the AI. Null means "not
+//                     yet known", which is what lets the AI decide what to ask
+//                     next. This is what crosses the wire to /api/chat.
+//   MndaFormValues  — a fully-populated document, what `renderNda` and the PDF
+//                     consume. Mirrors the slots on Mutual-NDA-coverpage.md.
+//
+// `toFormValues` is the one bridge between them, filling unknowns with
+// placeholders so the preview can render a partial draft.
 
 export type MndaFormValues = {
   purpose: string;
@@ -16,14 +25,52 @@ export type MndaFormValues = {
   modifications: string;
 };
 
-export const defaultValues: MndaFormValues = {
-  purpose: 'Evaluating whether to enter into a business relationship with the other party.',
-  effectiveDate: new Date().toISOString().slice(0, 10),
-  termMode: 'years',
-  termYears: 1,
-  confidentialityMode: 'years',
-  confidentialityYears: 1,
-  governingLaw: '',
-  jurisdiction: '',
-  modifications: '',
+export type MndaFields = {
+  purpose: string | null;
+  effectiveDate: string | null;
+  termMode: 'years' | 'until_terminated' | null;
+  termYears: number | null;
+  confidentialityMode: 'years' | 'perpetuity' | null;
+  confidentialityYears: number | null;
+  governingLaw: string | null;
+  jurisdiction: string | null;
+  modifications: string | null;
 };
+
+export const emptyFields: MndaFields = {
+  purpose: null,
+  effectiveDate: null,
+  termMode: null,
+  termYears: null,
+  confidentialityMode: null,
+  confidentialityYears: null,
+  governingLaw: null,
+  jurisdiction: null,
+  modifications: null,
+};
+
+export type ChatMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
+// Fill unknowns so a half-finished conversation still previews. The empty
+// strings are load-bearing: `validate` in lib/pdf.ts rejects them, so a draft
+// missing real answers cannot reach a PDF.
+//
+// Note `effectiveDate` falls back to '' and NOT to today. Defaulting it to a
+// real date would sail past `validate` and silently date the agreement for a
+// user who never gave one.
+export function toFormValues(f: MndaFields): MndaFormValues {
+  return {
+    purpose: f.purpose ?? '',
+    effectiveDate: f.effectiveDate ?? '',
+    termMode: f.termMode ?? 'years',
+    termYears: f.termYears ?? 1,
+    confidentialityMode: f.confidentialityMode ?? 'years',
+    confidentialityYears: f.confidentialityYears ?? 1,
+    governingLaw: f.governingLaw ?? '',
+    jurisdiction: f.jurisdiction ?? '',
+    modifications: f.modifications ?? '',
+  };
+}
