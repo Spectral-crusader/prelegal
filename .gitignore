@@ -8,6 +8,9 @@ Thumbs.db
 *.swp
 *.swo
 
+# Agent tooling
+.claude/
+
 # Python bytecode
 __pycache__/
 *.py[cod]
