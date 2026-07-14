@@ -2,9 +2,14 @@
 name = "prelegal-backend"
 version = "0.1.0"
 description = "Prelegal backend: serves the API and the statically built frontend."
-requires-python = ">=3.12"
+# Upper bound tracks litellm: it ships a Rust extension and publishes wheels
+# only up to cp313, so 3.14 forces a source build. The image is python:3.13.
+requires-python = ">=3.12,<3.14"
 dependencies = [
     "fastapi>=0.121.2",
+    "litellm>=1.92.0",
+    "pydantic>=2.13.4",
+    "python-dotenv>=1.2.2",
     "uvicorn[standard]>=0.41.0",
 ]
 

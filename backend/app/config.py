@@ -3,8 +3,14 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 REPO_ROOT = BACKEND_DIR.parent
+
+# Local dev reads the repo-root .env; in the image the same keys arrive as real
+# environment variables (docker-compose `env_file`), where this is a no-op.
+load_dotenv(REPO_ROOT / ".env")
 
 # The SQLite file. Ephemeral by design: it lives on the container filesystem so
 # each `docker compose up` starts from an empty database.
