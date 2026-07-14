@@ -1,0 +1,14 @@
+**/node_modules
+**/.next
+**/out
+**/.venv
+**/__pycache__
+**/*.db
+**/.pytest_cache
+**/*.tsbuildinfo
+frontend/public/templates
+.git
+.env
+# Host-side start/stop wrappers; not part of the image.
+# Anchored so frontend/scripts/ (needed by the build) is kept.
+/scripts

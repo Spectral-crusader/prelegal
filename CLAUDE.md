@@ -8,7 +8,20 @@ The available documents are covered in the catalog.json file in the project root
 
 @catalog.json
 
-The current implementation supports all 11 document types via AI chat with full user authentication and document persistence.
+The above describes the intended product. The current implementation is a long way
+short of it — treat the rest of this file as the target design, not a description of
+what exists.
+
+As of PL-4, the implementation is:
+
+- A **Mutual NDA** creator only (1 of the 11 document types): a form, a live preview,
+  and a PDF download. All rendering is client-side; see `frontend/lib/render.ts`.
+- **No AI chat.** Nothing calls an LLM yet, and `OPENROUTER_API_KEY` is unused.
+- **No authentication.** The login screen is a placeholder that lets anyone through.
+  The `users` table exists but is never written to.
+- **No document persistence.** Drafts live in React state and are lost on reload.
+- A FastAPI backend that serves the statically exported frontend and two stub
+  endpoints (`/api/health`, `/api/me`), packaged as a single Docker container.
 
 ## Development process
 

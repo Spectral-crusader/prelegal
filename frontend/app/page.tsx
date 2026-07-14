@@ -1,62 +1,58 @@
 'use client';
 
-import { useState } from 'react';
-import { NdaForm } from './_components/NdaForm';
-import { NdaPreview } from './_components/NdaPreview';
-import { defaultValues, type MndaFormValues } from '@/lib/types';
+import { useRouter } from 'next/navigation';
+import { useState, type FormEvent } from 'react';
 import styles from './page.module.css';
 
-export default function HomePage() {
-  const [values, setValues] = useState<MndaFormValues>(defaultValues);
-  const [isRendering, setIsRendering] = useState(false);
+// Placeholder sign-in. PL-4 builds the foundation only: there is no
+// authentication yet, so any input takes the user through to the platform.
+// Real sign up / sign in against the users table lands in a later ticket.
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
 
-  async function handleDownload() {
-    setIsRendering(true);
-    try {
-      const res = await fetch('/api/render-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `Render failed (HTTP ${res.status})`);
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'Mutual-NDA.pdf';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      alert(`Could not generate PDF: ${message}`);
-    } finally {
-      setIsRendering(false);
-    }
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    router.push('/app');
   }
 
   return (
     <main className={styles.main}>
-      <header className={styles.header}>
-        <h1>Mutual NDA Creator</h1>
-        <p>
-          A prototype of the prelegal intake flow. Fill in the deal terms, review the
-          rendered agreement, and download a print-ready PDF.
-        </p>
-      </header>
-      <div className={styles.grid}>
-        <NdaForm
-          values={values}
-          onChange={setValues}
-          onDownload={handleDownload}
-          isRendering={isRendering}
+      <form className={styles.card} onSubmit={handleSubmit}>
+        <h1 className={styles.title}>prelegal</h1>
+        <p className={styles.subtitle}>Draft legal agreements from standard templates.</p>
+
+        <label className={styles.label} htmlFor="email">
+          Email
+        </label>
+        <input
+          id="email"
+          type="email"
+          className={styles.input}
+          placeholder="you@company.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
-        <NdaPreview values={values} />
-      </div>
+
+        <label className={styles.label} htmlFor="password">
+          Password
+        </label>
+        <input
+          id="password"
+          type="password"
+          className={styles.input}
+          placeholder="••••••••"
+        />
+
+        <button type="submit" className={styles.submit}>
+          Sign in
+        </button>
+
+        <p className={styles.notice}>
+          Demo sign-in — authentication is not implemented yet. Any details will take you
+          through to the platform.
+        </p>
+      </form>
     </main>
   );
 }

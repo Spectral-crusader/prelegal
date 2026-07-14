@@ -2,20 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import type { MndaFormValues } from '@/lib/types';
-import { renderNdaClient } from '@/lib/render-client';
+import { renderNda } from '@/lib/render';
 import styles from './NdaPreview.module.css';
 
 type Props = { values: MndaFormValues };
 
-// Lightweight client-side preview that mirrors what the server renderer will
-// produce. Uses the same regex substitution so the preview is always in sync
-// with what the PDF will contain.
+// Live preview of the agreement. Shares `renderNda` with the PDF pipeline, so
+// what is previewed is exactly what gets downloaded.
 export function NdaPreview({ values }: Props) {
   const [markdown, setMarkdown] = useState<string>('');
 
   useEffect(() => {
     let cancelled = false;
-    void renderNdaClient(values).then((md) => {
+    void renderNda(values).then((md) => {
       if (!cancelled) setMarkdown(md);
     });
     return () => {
