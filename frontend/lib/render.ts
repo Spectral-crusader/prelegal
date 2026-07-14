@@ -1,28 +1,41 @@
-// Pure renderers for the Mutual NDA.
+// Renderer for the Mutual NDA. Runs in the browser: it fetches the source
+// Markdown from /templates (served as static assets) and substitutes the
+// user's values.
 //
 // The source templates use two placeholder conventions:
 //   - `<span class="coverpage_link">…</span>`  — a slot the user fills.
 //   - `<label>…</label>`                       — helper text shown beneath a field.
 // Both live inline inside Markdown, so we replace them with strings before
-// handing the document to a Markdown / HTML / PDF pipeline.
+// handing the document to the preview or the PDF pipeline.
 //
 // The coverpage also encodes its choices via GitHub-style checkboxes
 // ([x] / [ ]). The renderer walks those and selects one option per group.
 
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
 import type { MndaFormValues } from './types';
 
-const ASSETS_DIR = path.join(process.cwd(), 'lib', 'templates', '__assets');
+// The templates never change at runtime, and `renderNda` runs on every
+// keystroke of the preview — so fetch each one once and reuse the promise.
+const templateCache = new Map<string, Promise<string>>();
 
-async function readAsset(filename: string): Promise<string> {
-  const filePath = path.join(ASSETS_DIR, filename);
-  return fs.readFile(filePath, 'utf8');
+function readTemplate(filename: string): Promise<string> {
+  let pending = templateCache.get(filename);
+  if (!pending) {
+    pending = fetch(`/templates/${filename}`).then((res) => {
+      if (!res.ok) {
+        // Drop the rejected promise so a later render can retry.
+        templateCache.delete(filename);
+        throw new Error(`Could not load template ${filename} (HTTP ${res.status})`);
+      }
+      return res.text();
+    });
+    templateCache.set(filename, pending);
+  }
+  return pending;
 }
 
 // Format an ISO date as e.g. "July 14, 2026". Falls back to the raw string
 // if the input is unparseable so the form never crashes the renderer.
-export function formatDate(iso: string): string {
+function formatDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -49,7 +62,7 @@ function confidentialityPhrase(v: MndaFormValues): string {
 // `selectors` is a list of {matcher, replacement} pairs. The first matcher
 // that fires for a given line wins; if none matches, the line is left as
 // italicized prose. Doing all selections in a single pass keeps the line
-// recognizable as a task list (the prior version's regex rewritten the line
+// recognizable as a task list (the prior version's regex rewrote the line
 // in place, so subsequent calls stopped matching it).
 function selectCheckbox(
   md: string,
@@ -75,21 +88,15 @@ function selectCheckbox(
   return out.join('\n');
 }
 
-export type RenderedNda = {
-  // The full document — coverpage, divider, standard terms — with the user's
-  // values substituted and the CC BY 4.0 attribution appended. Ready to be
-  // rendered to PDF.
-  markdown: string;
-};
-
-export async function renderNda(values: MndaFormValues): Promise<RenderedNda> {
-  let coverpage = await readAsset('Mutual-NDA-coverpage.md');
-  let standardTerms = await readAsset('Mutual-NDA.md');
+// The full document — coverpage, divider, standard terms — with the user's
+// values substituted and the CC BY 4.0 attribution appended. Feeds both the
+// live preview and the PDF, so the two can never drift.
+export async function renderNda(values: MndaFormValues): Promise<string> {
+  let coverpage = await readTemplate('Mutual-NDA-coverpage.md');
+  let standardTerms = await readTemplate('Mutual-NDA.md');
 
   // ---- Cover page substitutions -------------------------------------------
-  coverpage = coverpage
-    .replace(/<label>[^<]*<\/label>\n?/g, '') // remove helper labels
-    .replace(/\n\[Today’s date\]/, `\n${formatDate(values.effectiveDate)}`);
+  coverpage = coverpage.replace(/<label>[^<]*<\/label>\n?/g, ''); // remove helper labels
 
   // For each pair, only the user-selected option is bolded. The unselected
   // sibling is left as italicized prose. We only pass the chosen option's
@@ -120,10 +127,7 @@ export async function renderNda(values: MndaFormValues): Promise<RenderedNda> {
     // The two MNDA Term branches both use `[1 year(s)]` as a default; the
     // selected one already got its full line replaced above, but the unselected
     // branch still references the default — leave it unbracketed and general.
-    .replace(
-      /\[1 year\(s\)\] from Effective Date/g,
-      '1 year from Effective Date',
-    )
+    .replace(/\[1 year\(s\)\] from Effective Date/g, '1 year from Effective Date')
     .replace(/\[Fill in state\]/, values.governingLaw || '___')
     .replace(/\[Fill in city or county and state[^\]]*\]/, values.jurisdiction || '___')
     .replace(/List any modifications to the MNDA\n?/, values.modifications
@@ -153,8 +157,5 @@ export async function renderNda(values: MndaFormValues): Promise<RenderedNda> {
     'used under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). ' +
     'Source: https://github.com/CommonPaper/Mutual-NDA_\n';
 
-  const coverpageWithAttribution = coverpage + attribution;
-  const markdown = coverpageWithAttribution + '\n\n---\n\n' + standardTerms + attribution;
-
-  return { markdown };
+  return coverpage + attribution + '\n\n---\n\n' + standardTerms + attribution;
 }

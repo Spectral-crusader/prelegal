@@ -1,0 +1,18 @@
+services:
+  prelegal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: prelegal:latest
+    container_name: prelegal
+    ports:
+      - "8000:8000"
+    # No volume for the database: it lives in the container's writable layer, so
+    # every `up` starts from an empty schema, per the V1 foundation design.
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s

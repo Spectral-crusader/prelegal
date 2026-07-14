@@ -3,9 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "copy-templates": "node scripts/copy-templates.mjs",
+    "predev": "npm run copy-templates",
     "dev": "next dev",
+    "prebuild": "npm run copy-templates",
     "build": "next build",
-    "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },

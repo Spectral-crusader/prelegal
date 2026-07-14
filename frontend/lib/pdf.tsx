@@ -1,25 +1,15 @@
-// Server-only PDF generation for the Mutual NDA.
+// PDF generation for the Mutual NDA, in the browser.
 //
-// Why we don't reuse the live-preview Markdown verbatim: @react-pdf/renderer
-// draws layouts directly; we want proper headings, paragraphs, and page
-// breaks in the PDF rather than a pre-formatted text dump. So we re-tokenize
-// the rendered Markdown into a simple AST (headings, paragraphs, lists,
-// tables, hr) and pass it to a small renderer that uses @react-pdf primitives.
+// Why we don't render the Markdown verbatim: @react-pdf/renderer draws layouts
+// directly; we want proper headings, paragraphs, and page breaks in the PDF
+// rather than a pre-formatted text dump. So we tokenize the rendered Markdown
+// into a simple AST (headings, paragraphs, lists, tables, hr) and pass it to a
+// small renderer that uses @react-pdf primitives.
 
-import { NextResponse } from 'next/server';
-import {
-  Document,
-  Page,
-  StyleSheet,
-  Text,
-  View,
-  pdf,
-} from '@react-pdf/renderer';
+import { Document, Page, StyleSheet, Text, View, pdf } from '@react-pdf/renderer';
 import React from 'react';
-import { renderNda } from '@/lib/render';
-import type { MndaFormValues } from '@/lib/types';
-
-export const runtime = 'nodejs';
+import { renderNda } from './render';
+import type { MndaFormValues } from './types';
 
 const styles = StyleSheet.create({
   page: {
@@ -302,11 +292,7 @@ function BlockView({ block }: { block: Block }) {
 function NdaDocument({ markdown }: { markdown: string }) {
   const blocks = parseMarkdown(markdown);
   return (
-    <Document
-      title="Mutual Non-Disclosure Agreement"
-      author="prelegal"
-      subject="Mutual NDA"
-    >
+    <Document title="Mutual Non-Disclosure Agreement" author="prelegal" subject="Mutual NDA">
       <Page size="LETTER" style={styles.page}>
         {blocks.map((block, idx) => (
           <BlockView key={idx} block={block} />
@@ -323,18 +309,8 @@ function NdaDocument({ markdown }: { markdown: string }) {
   );
 }
 
-// Suppress an unused-import warning from Font for the rare case a future
-// custom font is wired in. Cheap to keep available.
-export async function POST(req: Request) {
-  let body: MndaFormValues;
-  try {
-    body = (await req.json()) as MndaFormValues;
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
-
-  // Light input validation — fail fast with a clear message rather than
-  // rendering a half-filled NDA.
+// Fail fast with a clear message rather than producing a half-filled NDA.
+export function validate(values: MndaFormValues): string | null {
   const required: (keyof MndaFormValues)[] = [
     'purpose',
     'effectiveDate',
@@ -342,49 +318,21 @@ export async function POST(req: Request) {
     'jurisdiction',
   ];
   for (const k of required) {
-    if (!body[k] || String(body[k]).trim() === '') {
-      return NextResponse.json({ error: `Missing required field: ${k}` }, { status: 422 });
+    if (!values[k] || String(values[k]).trim() === '') {
+      return `Missing required field: ${k}`;
     }
   }
-  if (body.termMode !== 'years' && body.termMode !== 'until_terminated') {
-    return NextResponse.json({ error: 'termMode must be "years" or "until_terminated"' }, { status: 422 });
+  const inRange = (n: number) => Number.isInteger(n) && n >= 1 && n <= 99;
+  if (values.termMode === 'years' && !inRange(values.termYears)) {
+    return 'termYears must be an integer 1–99';
   }
-  if (body.confidentialityMode !== 'years' && body.confidentialityMode !== 'perpetuity') {
-    return NextResponse.json(
-      { error: 'confidentialityMode must be "years" or "perpetuity"' },
-      { status: 422 },
-    );
+  if (values.confidentialityMode === 'years' && !inRange(values.confidentialityYears)) {
+    return 'confidentialityYears must be an integer 1–99';
   }
-  if (body.termMode === 'years' && (!Number.isInteger(body.termYears) || body.termYears < 1 || body.termYears > 99)) {
-    return NextResponse.json({ error: 'termYears must be an integer 1–99' }, { status: 422 });
-  }
-  if (
-    body.confidentialityMode === 'years' &&
-    (!Number.isInteger(body.confidentialityYears) ||
-      body.confidentialityYears < 1 ||
-      body.confidentialityYears > 99)
-  ) {
-    return NextResponse.json({ error: 'confidentialityYears must be an integer 1–99' }, { status: 422 });
-  }
+  return null;
+}
 
-  const rendered = await renderNda(body);
-  const instance = pdf(<NdaDocument markdown={rendered.markdown} />);
-  const stream = await instance.toBuffer();
-
-  // Drain the Node readable stream into a single Uint8Array so we can hand it
-  // to NextResponse. For prototype-sized documents (a few KB) this is fine;
-  // a production render path should pipe the stream through instead.
-  const chunks: Buffer[] = [];
-  for await (const chunk of stream as unknown as AsyncIterable<Buffer>) {
-    chunks.push(chunk);
-  }
-  const bytes = new Uint8Array(Buffer.concat(chunks));
-
-  return new NextResponse(bytes, {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': 'attachment; filename="Mutual-NDA.pdf"',
-    },
-  });
+export async function buildNdaPdfBlob(values: MndaFormValues): Promise<Blob> {
+  const markdown = await renderNda(values);
+  return pdf(<NdaDocument markdown={markdown} />).toBlob();
 }

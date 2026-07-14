@@ -6,3 +6,6 @@ dist/
 *.tsbuildinfo
 .env*.local
 next-env.d.ts.bak
+
+# Copied from ../templates by scripts/copy-templates.mjs at build time.
+public/templates/
