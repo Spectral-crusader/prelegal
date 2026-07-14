@@ -1,0 +1,31 @@
+.preview {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  background: #fafafa;
+  border: 1px solid #e2e2e6;
+  border-radius: 8px;
+  min-height: 100%;
+}
+
+.heading {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.body {
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono',
+    monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 1rem;
+  overflow: auto;
+  max-height: 75vh;
+  color: #111827;
+}
