@@ -1,0 +1,52 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+============================================================
+
+All template Markdown files in this directory are derived from the Common
+Paper standards available at https://github.com/CommonPaper and are licensed
+under the Creative Commons Attribution 4.0 International License (CC BY 4.0).
+
+You are free to:
+
+  * Share — copy and redistribute the material in any medium or format
+  * Adapt — remix, transform, and build upon the material for any purpose,
+    even commercially
+
+Under the following terms:
+
+  * Attribution — You must give appropriate credit, provide a link to the
+    license, and indicate if changes were made. You may do so in any
+    reasonable manner, but not in any way that suggests the licensor
+    endorses you or your use.
+
+Full license text: https://creativecommons.org/licenses/by/4.0/legalcode
+Human-readable summary: https://creativecommons.org/licenses/by/4.0/
+
+Attribution:
+------------
+
+These templates are based on Common Paper standards, originally created by
+a committee of over 40 attorneys representing technology vendors,
+procurement teams, boutique firms, and Big Law. Source repositories:
+
+  * Mutual Non-Disclosure Agreement — https://github.com/CommonPaper/Mutual-NDA
+  * Cloud Service Agreement       — https://github.com/CommonPaper/CSA
+  * Design Partner Agreement      — https://github.com/CommonPaper/Design-Partner-Agreement
+  * Service Level Agreement       — https://github.com/CommonPaper/SLA
+  * Professional Services Agreement — https://github.com/CommonPaper/PSA
+  * Data Processing Agreement     — https://github.com/CommonPaper/DPA
+  * Software License Agreement    — https://github.com/CommonPaper/Software-License-Agreement
+  * Partnership Agreement         — https://github.com/CommonPaper/Partnership-Agreement
+  * Pilot Agreement               — https://github.com/CommonPaper/Pilot-Agreement
+  * Business Associate Agreement  — https://github.com/CommonPaper/BAA
+  * AI Addendum                   — https://github.com/CommonPaper/AI-Addendum
+
+Catalog:
+  * catalog.json — name, description, and filename for each template in this
+    directory.
+
+No warranty:
+------------
+
+These templates are provided "as is" without warranty of any kind. They are
+not a substitute for legal advice. Consult a qualified attorney before
+executing any agreement based on these templates.

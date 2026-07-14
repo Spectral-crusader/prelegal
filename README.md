@@ -12,11 +12,21 @@ A pre-legal intake and document-screening tool.
 
 - [x] Repository bootstrapped
 - [x] License declared (MIT)
+- [x] Legal template dataset imported from Common Paper (see `templates/` and `catalog.json`)
 - [ ] Scope & feature set finalized
 - [ ] Core implementation
 - [ ] Tests
 - [ ] Documentation
 - [ ] First stable release
+
+## Template dataset
+
+`templates/` contains a curated set of standard legal agreement templates
+sourced from [Common Paper](https://commonpaper.com). `catalog.json` lists
+each template with its name, description, and filename.
+
+The templates are released under [CC BY 4.0](./templates/LICENSE) and may be
+freely used and modified with attribution.
 
 For the current task list, see the [open issues](../../issues).
 

@@ -1,0 +1,80 @@
+{
+  "name": "Common Paper Legal Templates",
+  "description": "A curated dataset of standard legal agreement templates sourced from Common Paper (https://commonpaper.com). Each template is a standard form contract designed to be customized for specific business transactions and signed by the parties. The templates are released under CC BY 4.0 and may be freely used and modified with attribution.",
+  "source": "https://github.com/CommonPaper",
+  "license": "CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)",
+  "templates": [
+    {
+      "name": "Mutual Non-Disclosure Agreement",
+      "description": "Standard mutual non-disclosure agreement (MNDA) for two-way confidential information exchange. Includes a cover page plus standard terms.",
+      "filename": "Mutual-NDA.md",
+      "source_repository": "https://github.com/CommonPaper/Mutual-NDA"
+    },
+    {
+      "name": "Mutual Non-Disclosure Agreement Cover Page",
+      "description": "Companion Cover Page for the Mutual Non-Disclosure Agreement, intended to be completed with the deal-specific terms and signed by the parties.",
+      "filename": "Mutual-NDA-coverpage.md",
+      "source_repository": "https://github.com/CommonPaper/Mutual-NDA"
+    },
+    {
+      "name": "Cloud Service Agreement",
+      "description": "Standard agreement for selling and buying cloud software and SaaS products. Designed to be paired with an Order Form (Cover Page) and optional addenda such as the SLA.",
+      "filename": "CSA.md",
+      "source_repository": "https://github.com/CommonPaper/CSA"
+    },
+    {
+      "name": "Design Partner Agreement",
+      "description": "Standard agreement between a vendor and a design partner for early-stage product feedback, collaboration, and validation under defined terms.",
+      "filename": "Design-Partner-Agreement.md",
+      "source_repository": "https://github.com/CommonPaper/Design-Partner-Agreement"
+    },
+    {
+      "name": "Service Level Agreement",
+      "description": "Standard service-level agreement (SLA) designed to be incorporated into a Common Paper Cloud Service Agreement (CSA). Sets uptime, support, and remedy terms.",
+      "filename": "SLA.md",
+      "source_repository": "https://github.com/CommonPaper/SLA"
+    },
+    {
+      "name": "Professional Services Agreement",
+      "description": "Standard agreement for vendor-provided professional services such as consulting, implementation, or training. Includes SOW/Order Form structure.",
+      "filename": "PSA.md",
+      "source_repository": "https://github.com/CommonPaper/PSA"
+    },
+    {
+      "name": "Data Processing Agreement",
+      "description": "Standard data processing agreement (DPA) covering processor/subprocessor obligations, security, and data subject matter for GDPR-style privacy compliance.",
+      "filename": "DPA.md",
+      "source_repository": "https://github.com/CommonPaper/DPA"
+    },
+    {
+      "name": "Software License Agreement",
+      "description": "Standard on-premise or downloadable software license agreement, paired with an Order Form covering license metrics, fees, and term.",
+      "filename": "Software-License-Agreement.md",
+      "source_repository": "https://github.com/CommonPaper/Software-License-Agreement"
+    },
+    {
+      "name": "Partnership Agreement",
+      "description": "Standard agreement governing a strategic partnership between two parties, including scope, cooperation, and revenue/expense terms.",
+      "filename": "Partnership-Agreement.md",
+      "source_repository": "https://github.com/CommonPaper/Partnership-Agreement"
+    },
+    {
+      "name": "Pilot Agreement",
+      "description": "Short-term pilot/trial/evaluation agreement for prospective customers to test a product or service before committing to a longer-term deal.",
+      "filename": "Pilot-Agreement.md",
+      "source_repository": "https://github.com/CommonPaper/Pilot-Agreement"
+    },
+    {
+      "name": "Business Associate Agreement",
+      "description": "Standard Business Associate Agreement (BAA) for HIPAA compliance between a covered entity and a business associate handling protected health information.",
+      "filename": "BAA.md",
+      "source_repository": "https://github.com/CommonPaper/BAA"
+    },
+    {
+      "name": "AI Addendum",
+      "description": "Standard addendum for AI-specific terms, designed to be incorporated into a Common Paper Cloud Service Agreement or Software License Agreement.",
+      "filename": "AI-Addendum.md",
+      "source_repository": "https://github.com/CommonPaper/AI-Addendum"
+    }
+  ]
+}
