@@ -10,7 +10,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { buildPdfBlob, pdfFilename } from './pdf';
+import { buildPdfBlob, footerText, pdfFilename } from './pdf';
 import type { DocumentSpec, Fields } from './types';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -68,5 +68,18 @@ describe('buildPdfBlob', () => {
 
   it('names the file after the document', () => {
     expect(pdfFilename(byId('cloud-service-agreement'))).toBe('Cloud-Service-Agreement.pdf');
+  });
+});
+
+describe('footerText', () => {
+  // The disclaimer has to survive the download — the screen's banner does not.
+  it('marks every page as a draft subject to legal review', () => {
+    expect(footerText(byId('mutual-nda'), 2, 6)).toContain('DRAFT, subject to legal review');
+  });
+
+  it('numbers the page and credits the source', () => {
+    const footer = footerText(byId('mutual-nda'), 2, 6);
+    expect(footer).toContain('Page 2 of 6');
+    expect(footer).toContain('CC BY 4.0');
   });
 });

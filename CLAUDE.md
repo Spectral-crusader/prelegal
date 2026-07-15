@@ -9,9 +9,9 @@ The available documents are covered in the catalog.json file in the project root
 @catalog.json
 
 The above describes the **intended** product, and so do the sections below — treat
-them as the target design, not a description of what exists. The product is a long
-way short of it: see [Current implementation](#current-implementation) at the end of
-this file for what is actually built.
+them as the target design, not a description of what exists. See
+[Current implementation](#current-implementation) at the end of this file for what
+is actually built.
 
 ## Development process
 
@@ -34,7 +34,7 @@ Established by PL-4 and in place today:
 The entire project is packaged into a Docker container.  
 The backend is in backend/ and is a uv project, using FastAPI.  
 The frontend is in frontend/  
-The database uses SQLite and is created from scratch each time the Docker container is brought up.  
+The database uses SQLite and is created from scratch each time the Docker container is brought up. This is deliberate, and PL-7 kept it: accounts and saved documents do not survive a restart.  
 The frontend is statically built (`output: 'export'`) and served by FastAPI — this works, and means there is no Node process at runtime. Next.js route handlers are **not** available under static export, so anything server-side must be a FastAPI endpoint.  
 Scripts in scripts/:  
 ```bash
@@ -52,8 +52,6 @@ scripts/stop-windows.ps1
 ```
 Backend available at http://localhost:8000
 
-Still to build: the `users` table exists but sign up and sign in are not implemented.
-
 ## Color Scheme
 - Accent Yellow: `#ecad0a`
 - Blue Primary: `#209dd7`
@@ -61,16 +59,29 @@ Still to build: the `users` table exists but sign up and sign in are not impleme
 - Dark Navy: `#032147` (headings)
 - Gray Text: `#888888`
 
-Applied on the login screen, and on the chat and preview panes at `/app` (PL-5).
-Accent yellow is still not used anywhere. The rest of `/app` keeps its own greys.
+Since PL-7 these live as custom properties in `frontend/app/globals.css` (`--navy`,
+`--blue`, `--purple`, `--yellow`, `--gray-text`, plus derived hovers and tints) and
+every screen styles from them — don't hard-code a hex in a `.module.css`. Accent
+yellow is used in exactly one place, the draft disclaimer banner, which is what
+keeps it an accent.
 
 ## Current implementation
 
-Last updated: PL-6 (2026-07-15). **Keep this section honest** — it is the first thing
+Last updated: PL-7 (2026-07-15). **Keep this section honest** — it is the first thing
 read each session, and an inaccurate claim here misleads every future change.
 
 Built:
 
+- **Accounts** (PL-7). Email + password sign up / sign in / sign out. Passwords are
+  hashed with stdlib `hashlib.scrypt` (`backend/app/auth.py`) — no password
+  dependency. Sessions are opaque random tokens in a `sessions` table, carried in an
+  httpOnly cookie, so signing out actually revokes server-side rather than only
+  dropping the cookie. `/api/me` is the frontend's guard.
+- **Saved documents** (PL-7). Every chat turn upserts a row in `drafts` — document,
+  fields, and the transcript — so a reload resumes instead of restarting. `/documents`
+  lists them; `/app?draft=<id>` reopens one, conversation and all. The chat route
+  appends its own reply before storing, so a restored draft ends on the assistant's
+  question rather than stranding the user with nothing to answer.
 - **All eleven document types** (PL-6). `/app` is a document-agnostic creator: the
   chat picks the document, then runs its intake, with a live preview and a PDF
   download. `documents.json` at the repo root is the registry — the product's view
@@ -87,24 +98,40 @@ Built:
   `openrouter/openai/gpt-oss-120b` via LiteLLM with Cerebras as the provider, using
   Structured Outputs to return the assistant's reply and the extracted deal terms in
   one call. The schema is built per document from its spec via `create_model`, so
-  there is one chat engine, not eleven. `POST /api/chat` is stateless: the browser
+  there is one chat engine, not eleven. The browser owns the live conversation: it
   sends the transcript, the chosen document and the fields so far, and gets back the
-  merged fields. There is no form — chat is the only way to fill a document.
+  merged fields. The turn is computed purely from the request; the only thing the
+  route keeps is the draft it saves (PL-7). There is no form — chat is the only way
+  to fill a document.
 - **FastAPI backend** (`backend/`, uv project) serving the static frontend export at
-  `/` plus `/api/chat`, `/api/documents`, and two stubs, `/api/health` and `/api/me`.
-  Schema init on startup.
-- **SQLite** via stdlib `sqlite3` (no ORM — one table). A `users` table, recreated
-  empty on every container start because the DB lives in the container's writable
-  layer.
+  `/` plus `/api/chat`, `/api/documents`, `/api/auth/*`, `/api/me`, `/api/drafts`,
+  and `/api/health`. Schema init on startup. Everything except `/api/health` and
+  `/api/documents` requires a session — `/api/chat` included, because every turn
+  spends real money at OpenRouter.
+- **SQLite** via stdlib `sqlite3` (no ORM). Three tables — `users`, `sessions`,
+  `drafts` — recreated empty on every container start because the DB lives in the
+  container's writable layer. That is why there is no migration story: the schema in
+  `db.py` is simply what a fresh database gets.
+- **A professional-looking UI** (PL-7). `AppShell` gives every signed-in screen one
+  header, nav, sign-out and disclaimer banner, and doubles as the auth guard.
+  `AuthForm` backs both `/` and `/signup` — they are the same card with different
+  words.
 - **Single Docker container**, one process, one port (8000). Start/stop scripts for
   mac, linux and windows wrap `docker compose`.
 
 Not built — do not assume otherwise:
 
-- **No authentication.** The login screen at `/` is a placeholder that lets anyone
-  through to `/app`. The `users` table is never written to.
-- **No document persistence.** Drafts and the chat transcript live in React state and
-  are lost on reload. `/api/chat` stores nothing.
+- **Nothing survives a restart.** Accounts and saved documents go with the container,
+  by design (PL-7, and the ticket says so explicitly). Do not describe this to a user
+  as durable storage; the sign-in screen says as much.
+- **No password reset, no email verification, no rate limiting** on sign-in. There is
+  no mail path, and accounts are ephemeral anyway. Rate limiting is the one worth
+  doing first if this ever holds a real account.
+- **The session cookie is not `secure`.** It cannot be: the app is served over plain
+  HTTP on localhost, and a secure cookie would never come back. Set it in
+  `routes/auth.py` the day this runs behind TLS.
+- **No deleting a draft.** The history list only grows. PL-7 left it; the ticket did
+  not ask, and `drafts.save` is the only writer.
 - **No switching document mid-intake.** Once `documentId` is set every turn is an
   intake turn, so "actually, make it a CSA instead" is not understood — reloading is
   the only way out. Re-running selection each turn would double the LLM calls for a
@@ -120,6 +147,23 @@ Not built — do not assume otherwise:
 
 Conventions worth knowing:
 
+- **Auth is guarded in the browser, enforced on the server.** A static export has no
+  server to redirect at the edge, so `AppShell` asks `/api/me` and bounces a 401 to
+  `/`. That guard is a convenience, not a security boundary — it is trivially
+  bypassed. Every protected route therefore takes `CurrentUser` and is safe on its
+  own. Never let the two drift into one.
+- **`drafts.py` never queries without a `user_id`.** Both reads take one and filter on
+  it, and `save` scopes its UPDATE by `user_id` as well as `draft_id`, so passing
+  someone else's draft id writes a new row rather than over their work.
+  `test_drafts.py` pins all three. Keep any new query in that shape.
+- **A restored draft must end on the assistant's message.** The chat route appends its
+  own reply to the transcript before saving, rather than waiting for the browser to
+  send it back next turn. Skip that and a reopened draft ends on the user's message,
+  leaving them nothing to answer.
+- **`IntakeChat` reads `initialMessages` once, at mount**, so `/app` keys it on the
+  draft id. Moving between drafts is a client-side nav that leaves the page mounted;
+  without the key the previous conversation stays on screen, and without the state
+  reset in the same effect the previous document and fields do too.
 - `templates/` is the single source of truth for the corpus.
   `frontend/scripts/copy-templates.mjs` copies it into `frontend/public/` at build
   time; `frontend/public/templates/` is generated and gitignored, so never edit it.

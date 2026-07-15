@@ -1,26 +1,23 @@
-.main {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-  color: #111827;
-}
+/* The page frame — max width, padding, background — belongs to AppShell now;
+   what is left here is the creator's own header and two-pane grid. */
 
 .header {
-  margin-bottom: 2rem;
+  margin-bottom: 1.75rem;
 }
 
 .header h1 {
-  margin: 0 0 0.5rem 0;
-  font-size: 2rem;
+  margin: 0 0 0.375rem 0;
+  font-size: 1.75rem;
   font-weight: 700;
   letter-spacing: -0.01em;
+  color: var(--navy);
 }
 
 .header p {
   margin: 0;
   max-width: 60ch;
-  color: #4b5563;
+  color: var(--gray-text);
+  font-size: 0.9375rem;
 }
 
 .grid {
@@ -28,6 +25,20 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
+}
+
+.loading {
+  color: var(--gray-text);
+}
+
+.error {
+  margin: 0.875rem 0 0;
+  padding: 0.625rem 0.8rem;
+  border-radius: 6px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.875rem;
 }
 
 @media (max-width: 900px) {

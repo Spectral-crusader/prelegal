@@ -4,17 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import type { ChatMessage, DocumentSpec, Fields } from '@/lib/types';
 import styles from './IntakeChat.module.css';
 
-// The opening line is fixed rather than generated: it costs a round trip to ask
-// the model to say hello, and the first question is always the same one. Note
-// it asks what they need rather than naming a document — picking one is the
-// first thing the conversation does.
-const GREETING: ChatMessage = {
-  role: 'assistant',
-  content:
-    'Hi — I can draft a range of standard business agreements. What are you trying ' +
-    'to put together, and who is it with?',
-};
-
 type Props = {
   // The settled document's id, and its spec once the registry has loaded. The
   // id is passed rather than read off `spec` because the two can lag: the id
@@ -22,13 +11,27 @@ type Props = {
   // and sending null for a document already settled would restart the
   // selection.
   documentId: string | null;
+  // Where the backend is saving this conversation. Null until the first save;
+  // sending it back is what makes the next turn update that draft rather than
+  // start another.
+  draftId: number | null;
   spec: DocumentSpec | null;
   fields: Fields;
-  onTurn: (documentId: string | null, fields: Fields) => void;
+  // The greeting for a new document, or a restored draft's conversation. Read
+  // once, at mount: the transcript is this component's own state from then on.
+  initialMessages: ChatMessage[];
+  onTurn: (documentId: string | null, fields: Fields, draftId: number | null) => void;
 };
 
-export function IntakeChat({ documentId, spec, fields, onTurn }: Props) {
-  const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
+export function IntakeChat({
+  documentId,
+  draftId,
+  spec,
+  fields,
+  initialMessages,
+  onTurn,
+}: Props) {
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [draft, setDraft] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,13 +55,13 @@ export function IntakeChat({ documentId, spec, fields, onTurn }: Props) {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: history, documentId, fields }),
+        body: JSON.stringify({ messages: history, documentId, draftId, fields }),
       });
       if (!res.ok) throw new Error(`The assistant is unavailable (HTTP ${res.status}).`);
 
       const reply = await res.json();
       setMessages([...history, { role: 'assistant', content: reply.message }]);
-      onTurn(reply.documentId, reply.fields);
+      onTurn(reply.documentId, reply.fields, reply.draftId);
     } catch (err) {
       // Keep the user's message on screen so they can retry without retyping.
       setError(err instanceof Error ? err.message : String(err));

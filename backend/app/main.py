@@ -12,6 +12,8 @@ from fastapi.staticfiles import StaticFiles
 from .config import STATIC_DIR
 from .db import init_db
 from .routes.api import router as api_router
+from .routes.auth import router as auth_router
+from .routes.drafts import router as drafts_router
 
 
 @asynccontextmanager
@@ -24,6 +26,8 @@ app = FastAPI(title="Prelegal", lifespan=lifespan)
 
 # Registered before the static mount below, which is a catch-all at "/".
 app.include_router(api_router)
+app.include_router(auth_router)
+app.include_router(drafts_router)
 
 # Absent until `npm run build` has produced the export, which is the normal
 # state when running backend tests.
