@@ -15,6 +15,8 @@ A pre-legal intake and document-screening tool.
 - [x] Legal template dataset imported from Common Paper (see `templates/` and `catalog.json`)
 - [x] **PL-3** — Mutual NDA Creator prototype (Next.js app in `frontend/`)
 - [x] **PL-4** — V1 technical foundation (FastAPI backend, SQLite, Docker, scripts)
+- [x] **PL-5** — AI intake chat (LiteLLM → OpenRouter → Cerebras, Structured Outputs)
+- [x] **PL-6** — all eleven document types, with AI document selection
 - [ ] Scope & feature set finalized
 - [ ] Core implementation (beyond the prototype)
 - [ ] Tests
@@ -67,20 +69,22 @@ empty schema.
 ## Architecture
 
 - **`backend/`** — a [uv](https://docs.astral.sh/uv/) project running FastAPI. It
-  exposes `/api/health` and `/api/me`, initializes the SQLite schema on startup,
-  and serves the frontend export at `/`.
+  exposes `/api/chat`, `/api/documents`, `/api/health` and `/api/me`, initializes
+  the SQLite schema on startup, and serves the frontend export at `/`.
 - **`frontend/`** — Next.js 15 (App Router), built with `output: 'export'` to plain
   HTML/JS. No Node process at runtime.
 - **`templates/`** — the single source of truth for the template corpus.
   `frontend/scripts/copy-templates.mjs` copies what the renderer needs into
   `frontend/public/` at build time.
 
-The current product surface is the [PL-3](../../issues/PL-3) Mutual NDA Creator at
-`/app`: fill in the deal terms, see a live preview, download a print-ready PDF.
-Rendering runs entirely in the browser — `frontend/lib/render.ts` does the
-placeholder substitution and `frontend/lib/pdf.tsx` draws the PDF with
-`@react-pdf/renderer`. Both the preview and the PDF share `renderNda`, so they
-cannot drift.
+The current product surface is the Agreement Creator at `/app`: say what you need,
+and the assistant picks one of the eleven documents, asks for its terms, and gives
+you a live preview and a print-ready PDF. `documents.json` is the registry of what
+we draft and what to ask for each one; adding a document is a registry edit.
+
+Rendering runs entirely in the browser — `frontend/lib/render.ts` fills the
+templates and `frontend/lib/pdf.tsx` draws the PDF with `@react-pdf/renderer`. Both
+the preview and the PDF share `renderDocument`, so they cannot drift.
 
 The login screen at `/` is a placeholder: authentication is not implemented, and
 any details take you through to the platform.

@@ -1,24 +1,33 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { ChatMessage, MndaFields } from '@/lib/types';
-import styles from './NdaChat.module.css';
+import type { ChatMessage, DocumentSpec, Fields } from '@/lib/types';
+import styles from './IntakeChat.module.css';
 
 // The opening line is fixed rather than generated: it costs a round trip to ask
-// the model to say hello, and the first question is always the same one.
+// the model to say hello, and the first question is always the same one. Note
+// it asks what they need rather than naming a document — picking one is the
+// first thing the conversation does.
 const GREETING: ChatMessage = {
   role: 'assistant',
   content:
-    "Hi — I'll help you put together a Mutual NDA. To start: what are you and " +
-    'the other party planning to share information about?',
+    'Hi — I can draft a range of standard business agreements. What are you trying ' +
+    'to put together, and who is it with?',
 };
 
 type Props = {
-  fields: MndaFields;
-  onFields: (next: MndaFields) => void;
+  // The settled document's id, and its spec once the registry has loaded. The
+  // id is passed rather than read off `spec` because the two can lag: the id
+  // comes back with the turn, the spec only once GET /api/documents resolves,
+  // and sending null for a document already settled would restart the
+  // selection.
+  documentId: string | null;
+  spec: DocumentSpec | null;
+  fields: Fields;
+  onTurn: (documentId: string | null, fields: Fields) => void;
 };
 
-export function NdaChat({ fields, onFields }: Props) {
+export function IntakeChat({ documentId, spec, fields, onTurn }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
   const [draft, setDraft] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -43,13 +52,13 @@ export function NdaChat({ fields, onFields }: Props) {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: history, fields }),
+        body: JSON.stringify({ messages: history, documentId, fields }),
       });
       if (!res.ok) throw new Error(`The assistant is unavailable (HTTP ${res.status}).`);
 
       const reply = await res.json();
       setMessages([...history, { role: 'assistant', content: reply.message }]);
-      onFields(reply.fields);
+      onTurn(reply.documentId, reply.fields);
     } catch (err) {
       // Keep the user's message on screen so they can retry without retyping.
       setError(err instanceof Error ? err.message : String(err));
@@ -59,8 +68,8 @@ export function NdaChat({ fields, onFields }: Props) {
   }
 
   return (
-    <section className={styles.chat} aria-label="NDA intake chat">
-      <h2 className={styles.heading}>Mutual NDA — Intake</h2>
+    <section className={styles.chat} aria-label="Document intake chat">
+      <h2 className={styles.heading}>{spec ? `${spec.name} — Intake` : 'What do you need?'}</h2>
 
       <div className={styles.transcript}>
         {messages.map((m, i) => (

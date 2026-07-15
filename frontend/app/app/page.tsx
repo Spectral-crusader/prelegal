@@ -1,33 +1,51 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { NdaChat } from '../_components/NdaChat';
-import { NdaPreview } from '../_components/NdaPreview';
-import { buildNdaPdfBlob, validate } from '@/lib/pdf';
-import { emptyFields, toFormValues, type MndaFields } from '@/lib/types';
+import { useEffect, useState } from 'react';
+import { IntakeChat } from '../_components/IntakeChat';
+import { DocumentPreview } from '../_components/DocumentPreview';
+import { buildPdfBlob, pdfFilename } from '@/lib/pdf';
+import { validate } from '@/lib/validate';
+import { loadDocuments } from '@/lib/documents';
+import type { DocumentSpec, Fields } from '@/lib/types';
 import styles from './page.module.css';
 
 export default function AppPage() {
-  // `fields` is what the user has told the AI; the preview and the PDF need a
-  // fully-populated document, so derive one rather than storing both.
-  const [fields, setFields] = useState<MndaFields>(emptyFields);
+  const [specs, setSpecs] = useState<DocumentSpec[]>([]);
+  // Null until the conversation settles on a document. `fields` is whatever the
+  // user has told the AI about it so far. Both are the backend's to decide: it
+  // returns the document and the full merged field map on every turn, so this
+  // page mirrors that answer rather than keeping its own.
+  const [documentId, setDocumentId] = useState<string | null>(null);
+  const [fields, setFields] = useState<Fields>({});
   const [isRendering, setIsRendering] = useState(false);
 
-  const values = useMemo(() => toFormValues(fields), [fields]);
+  useEffect(() => {
+    void loadDocuments().then(setSpecs);
+  }, []);
+
+  // Derived, not stored: if the registry is still in flight when the first turn
+  // lands, the spec simply appears once it arrives.
+  const spec = specs.find((d) => d.id === documentId) ?? null;
+
+  function handleTurn(nextId: string | null, next: Fields) {
+    setDocumentId(nextId);
+    setFields(next);
+  }
 
   async function handleDownload() {
-    const problem = validate(values);
+    if (!spec) return;
+    const problem = validate(spec, fields);
     if (problem) {
       alert(`Could not generate PDF: ${problem}`);
       return;
     }
     setIsRendering(true);
     try {
-      const blob = await buildNdaPdfBlob(values);
+      const blob = await buildPdfBlob(spec, fields);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'Mutual-NDA.pdf';
+      a.download = pdfFilename(spec);
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -43,16 +61,21 @@ export default function AppPage() {
   return (
     <main className={styles.main}>
       <header className={styles.header}>
-        <h1>Mutual NDA Creator</h1>
+        <h1>Agreement Creator</h1>
         <p>
-          Tell the assistant about your deal and it will fill in the agreement as you
-          go. Review the draft on the right, then download a print-ready PDF. This is
-          a drafting tool, not legal advice.
+          Tell the assistant what you need and it will pick the right agreement, then
+          fill it in as you go. Review the draft on the right, then download a
+          print-ready PDF. This is a drafting tool, not legal advice.
         </p>
       </header>
       <div className={styles.grid}>
-        <NdaChat fields={fields} onFields={setFields} />
-        <NdaPreview values={values} onDownload={handleDownload} isRendering={isRendering} />
+        <IntakeChat documentId={documentId} spec={spec} fields={fields} onTurn={handleTurn} />
+        <DocumentPreview
+          spec={spec}
+          fields={fields}
+          onDownload={handleDownload}
+          isRendering={isRendering}
+        />
       </div>
     </main>
   );

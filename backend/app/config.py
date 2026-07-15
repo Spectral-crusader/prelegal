@@ -19,3 +19,7 @@ DB_PATH = Path(os.environ.get("PRELEGAL_DB_PATH", BACKEND_DIR / "prelegal.db"))
 # The statically exported frontend. In the image the build stage drops it next
 # to the backend; locally it stays in frontend/out.
 STATIC_DIR = Path(os.environ.get("PRELEGAL_STATIC_DIR", REPO_ROOT / "frontend" / "out"))
+
+# The document registry. Lives at the repo root beside catalog.json, whose
+# template filenames it references; the image copies it next to the backend.
+DOCUMENTS_PATH = Path(os.environ.get("PRELEGAL_DOCUMENTS_PATH", REPO_ROOT / "documents.json"))

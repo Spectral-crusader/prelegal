@@ -1,17 +1,29 @@
-// Renderer for the Mutual NDA. Runs in the browser: it fetches the source
-// Markdown from /templates (served as static assets) and substitutes the
-// user's values.
+// Renderers. Run in the browser: they fetch the source Markdown from
+// /templates (served as static assets) and fill in the user's values.
 //
-// The source templates use two placeholder conventions:
-//   - `<span class="coverpage_link">…</span>`  — a slot the user fills.
+// Two paths, because the corpus has two shapes:
+//
+//   renderNda     — the Mutual NDA, the only document shipping a real cover
+//                   page. Its values are substituted inline and its checkbox
+//                   options selected. Bespoke, and staying that way.
+//   renderGeneric — everything else. See the comment above it; in short, these
+//                   templates deliberately leave their Variables in the prose
+//                   and expect a cover page to define them, so we synthesize
+//                   one instead of splicing values into the sentences.
+//
+// `renderDocument` dispatches on the spec. Both paths feed the preview and the
+// PDF, so the two can never drift.
+//
+// The source templates use these conventions:
+//   - `<span class="coverpage_link">…</span>`  — a Variable (also keyterms_link,
+//     orderform_link, businessterms_link, sow_link).
+//   - `<span class="header_2">…</span>`        — a section title.
 //   - `<label>…</label>`                       — helper text shown beneath a field.
-// Both live inline inside Markdown, so we replace them with strings before
+// All live inline inside Markdown, so we rewrite them to plain Markdown before
 // handing the document to the preview or the PDF pipeline.
-//
-// The coverpage also encodes its choices via GitHub-style checkboxes
-// ([x] / [ ]). The renderer walks those and selects one option per group.
 
-import type { MndaFormValues } from './types';
+import type { DocumentSpec, Fields, MndaFormValues } from './types';
+import { toMndaFormValues } from './types';
 
 // The templates never change at runtime, and `renderNda` runs on every
 // keystroke of the preview — so fetch each one once and reuse the promise.
@@ -86,6 +98,121 @@ function selectCheckbox(
     }
   }
   return out.join('\n');
+}
+
+// ---- the generic renderer -------------------------------------------------
+//
+// Every template except the Mutual NDA is a set of Standard Terms that leaves
+// its Variables — Provider, Subscription Period, Governing Law — capitalized in
+// the prose, to be defined by a signed cover page. The templates say so
+// themselves; the Pilot Agreement's §8.1 is typical:
+//
+//   "Variables have the meanings or descriptions given on the Order Form.
+//    However, if the Order Form omits or does not define a Variable, the
+//    default meaning will be 'none' or 'not applicable' and the correlating
+//    clause, sentence, or section does not apply to that Agreement."
+//
+// So we do not splice values into the sentences. We unwrap the Variable spans
+// to plain text and synthesize the cover page the standard terms are asking
+// for. That keeps the prose grammatical (no "within a single 12 months"), gives
+// unfilled optional fields a defined legal meaning rather than a blank, and
+// leaves the corpus readable as what it is.
+
+// Unwrap the template's inline HTML into plain Markdown. Variables keep their
+// name — the Key Terms table defines them — and section titles become bold.
+function toMarkdown(md: string): string {
+  return (
+    md
+      // These files are the standard terms, and say so themselves ("Standard
+      // Terms means these Common Paper … Standard Terms Version 2.0"). Their
+      // own h1 is the agreement's name, which the cover page above already
+      // carries, so retitle rather than print it twice. Mirrors how the MNDA's
+      // two files are titled.
+      .replace(/^# .*$/m, '# Standard Terms')
+      .replace(/<label>[^<]*<\/label>\n?/g, '')
+      // Section titles. Bold rather than a heading: they are already numbered
+      // list items, and a heading would break the list.
+      .replace(/<span class="header_[23]"[^>]*>([^<]*)<\/span>/g, '**$1**')
+      // Variables, in all five of the corpus's naming conventions.
+      .replace(
+        /<span class="(?:keyterms|coverpage|orderform|businessterms|sow)_link"[^>]*>([^<]*)<\/span>/g,
+        '$1',
+      )
+      // Anchors the corpus leaves lying around, e.g. `<span id="3.1"></span>`.
+      .replace(/<span[^>]*>([^<]*)<\/span>/g, '$1')
+  );
+}
+
+// A Variable's definition is free prose from the AI, and it lands in a Markdown
+// table cell. A newline would end the table — dropping every row below it into
+// the document as raw text — and a pipe would open a column that isn't there.
+// Fold the first and escape the second; `splitRow` in pdf.tsx honours the escape.
+function cell(text: string): string {
+  return text.replace(/\s*\n\s*/g, ' ').replace(/\|/g, '\\|');
+}
+
+// The cover page the standard terms expect: what each Variable means, and
+// somewhere to sign. Unset Variables are recorded as "Not applicable", which is
+// exactly the default the templates give them.
+function coverPage(spec: DocumentSpec, fields: Fields): string {
+  const rows = spec.fields.map((f) => {
+    const raw = fields[f.name];
+    const value =
+      raw == null || String(raw).trim() === ''
+        ? '_Not applicable._'
+        : f.type === 'date'
+          ? formatDate(String(raw))
+          : cell(String(raw));
+    return `| ${f.label} | ${value} |`;
+  });
+
+  return [
+    `# ${spec.name}`,
+    '',
+    '## Key Terms',
+    '',
+    `This Cover Page defines the Variables used in the ${spec.name} Standard Terms below, and is incorporated into them. A Variable left as "Not applicable" has no meaning and the clauses relying on it do not apply.`,
+    '',
+    '| Term | Definition |',
+    '|:--- | :--- |',
+    ...rows,
+    '',
+    'By signing this Cover Page, each party agrees to enter into this agreement.',
+    '',
+    '|| PARTY 1 | PARTY 2 |',
+    '|:--- | :----: | :----: |',
+    '| Signature | | |',
+    '| Print Name | | |',
+    '| Title | | |',
+    '| Company | | |',
+    '| Date | | |',
+  ].join('\n');
+}
+
+function genericAttribution(spec: DocumentSpec): string {
+  return (
+    '\n\n---\n\n' +
+    `_Based on the Common Paper ${spec.name}, used under ` +
+    '[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). ' +
+    'Source: https://github.com/CommonPaper_\n'
+  );
+}
+
+// A synthesized cover page, then the standard terms. Feeds both the live
+// preview and the PDF.
+export async function renderGeneric(spec: DocumentSpec, fields: Fields): Promise<string> {
+  const sources = await Promise.all(spec.templates.map(readTemplate));
+  const body = sources.map(toMarkdown).join('\n\n---\n\n');
+  return (
+    coverPage(spec, fields) + genericAttribution(spec) + '\n\n---\n\n' + body + genericAttribution(spec)
+  );
+}
+
+// Render whichever document the conversation settled on.
+export function renderDocument(spec: DocumentSpec, fields: Fields): Promise<string> {
+  return spec.renderer === 'mnda'
+    ? renderNda(toMndaFormValues(fields))
+    : renderGeneric(spec, fields);
 }
 
 // The full document — coverpage, divider, standard terms — with the user's

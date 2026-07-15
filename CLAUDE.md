@@ -66,21 +66,33 @@ Accent yellow is still not used anywhere. The rest of `/app` keeps its own greys
 
 ## Current implementation
 
-Last updated: PL-5 (2026-07-15). **Keep this section honest** — it is the first thing
+Last updated: PL-6 (2026-07-15). **Keep this section honest** — it is the first thing
 read each session, and an inaccurate claim here misleads every future change.
 
 Built:
 
-- **One document type of eleven.** The Mutual NDA creator at `/app`: an AI intake
-  chat, a live preview, and a PDF download. Nothing reads `catalog.json` at runtime.
-- **AI intake chat** (PL-5). `backend/app/chat.py` calls `openrouter/openai/gpt-oss-120b`
-  via LiteLLM with Cerebras as the provider, using Structured Outputs to return the
-  assistant's reply and the extracted deal terms in one call. `POST /api/chat` is
-  stateless: the browser sends the transcript plus the fields so far, and gets back
-  the merged fields. The form is gone — chat is the only way to fill the document.
+- **All eleven document types** (PL-6). `/app` is a document-agnostic creator: the
+  chat picks the document, then runs its intake, with a live preview and a PDF
+  download. `documents.json` at the repo root is the registry — the product's view
+  of the corpus that `catalog.json` describes. Adding a document is a registry edit,
+  not a code change.
+- **Document selection** (PL-6). Before a document is settled the chat runs a
+  selection turn against the catalog. Unsupported requests get a plain "we cannot
+  draft that", plus the closest supported document **only when one genuinely fits** —
+  see the prompt note below. The turn that settles a document immediately runs an
+  intake turn on the same history, so one reply both confirms the choice and asks
+  the first question, and anything already volunteered is extracted rather than
+  re-asked. That is the only turn costing two LLM calls.
+- **AI intake chat** (PL-5, generalized by PL-6). `backend/app/chat.py` calls
+  `openrouter/openai/gpt-oss-120b` via LiteLLM with Cerebras as the provider, using
+  Structured Outputs to return the assistant's reply and the extracted deal terms in
+  one call. The schema is built per document from its spec via `create_model`, so
+  there is one chat engine, not eleven. `POST /api/chat` is stateless: the browser
+  sends the transcript, the chosen document and the fields so far, and gets back the
+  merged fields. There is no form — chat is the only way to fill a document.
 - **FastAPI backend** (`backend/`, uv project) serving the static frontend export at
-  `/` plus `/api/chat` and two stubs, `/api/health` and `/api/me`. Schema init on
-  startup.
+  `/` plus `/api/chat`, `/api/documents`, and two stubs, `/api/health` and `/api/me`.
+  Schema init on startup.
 - **SQLite** via stdlib `sqlite3` (no ORM — one table). A `users` table, recreated
   empty on every container start because the DB lives in the container's writable
   layer.
@@ -93,22 +105,63 @@ Not built — do not assume otherwise:
   through to `/app`. The `users` table is never written to.
 - **No document persistence.** Drafts and the chat transcript live in React state and
   are lost on reload. `/api/chat` stores nothing.
+- **No switching document mid-intake.** Once `documentId` is set every turn is an
+  intake turn, so "actually, make it a CSA instead" is not understood — reloading is
+  the only way out. Re-running selection each turn would double the LLM calls for a
+  rare case, so PL-6 left it; a cheap fix would be a "start over" control in the UI.
 - **No backend involvement in *rendering*.** The backend fills fields via the chat,
   but the document itself is still drawn client-side: `frontend/lib/render.ts`
-  substitutes placeholders, `frontend/lib/pdf.tsx` draws the PDF with
-  `@react-pdf/renderer`. Both the preview and the PDF share `renderNda`, so they
-  cannot drift — keep it that way.
+  fills the templates, `frontend/lib/pdf.tsx` draws the PDF with
+  `@react-pdf/renderer`. Both the preview and the PDF share `renderDocument`, so
+  they cannot drift — keep it that way.
+- **No curation beyond the essentials.** Each document's spec names the 6–10
+  Variables worth asking about, not every Variable in the template (a PSA has 27).
+  The rest are left undefined, which the standard terms define as "not applicable".
 
 Conventions worth knowing:
 
 - `templates/` is the single source of truth for the corpus.
-  `frontend/scripts/copy-templates.mjs` copies what the renderer needs into
-  `frontend/public/` at build time; `frontend/public/templates/` is generated and
-  gitignored, so never edit it.
-- **Two field shapes, deliberately.** `MndaFields` (all nullable) is what the user has
-  told the AI; `MndaFormValues` (fully populated) is what the renderer needs.
-  `toFormValues` in `frontend/lib/types.ts` is the only bridge. Nulls are what let the
-  AI know what to ask next, so don't collapse the two.
+  `frontend/scripts/copy-templates.mjs` copies it into `frontend/public/` at build
+  time; `frontend/public/templates/` is generated and gitignored, so never edit it.
+  `documents.json` reaches the image via a `COPY` in the Dockerfile.
+- **Two renderers, deliberately.** The Mutual NDA is the only document in the corpus
+  shipping a real cover page, with checkbox options; `renderNda` handles it and stays
+  bespoke. Every other template is Standard Terms that leaves its Variables
+  capitalized in the prose for a cover page to define — each says so itself, e.g.
+  Pilot §8.1: *"if the Order Form omits or does not define a Variable, the default
+  meaning will be 'none' or 'not applicable'"*. So `renderGeneric` does **not**
+  substitute values into the sentences; it unwraps the Variable spans and synthesizes
+  the Key Terms cover page the terms are asking for. Splicing values inline instead
+  produces ungrammatical text ("within a single 12 months") and possessive-form bugs.
+- **A field's `label` must match its Variable in the template**, because that is what
+  ties a Key Terms row to the prose using it. `test_documents.py` enforces this.
+- **Two field shapes, deliberately.** `Fields` (all nullable) is what the user has
+  told the AI; the MNDA's `MndaFormValues` (fully populated) is what its renderer
+  needs. `toMndaFormValues` in `frontend/lib/types.ts` is the only bridge. Nulls are
+  what let the AI know what to ask next, so don't collapse the two.
+- **`requiredWhen` exists for a reason.** `termYears` is optional in general but
+  required when `termMode` is `years`; without the rule, `toMndaFormValues`'s
+  fallback would quietly issue a 1-year NDA to someone who chose a fixed term but
+  never said how long. Same class of trap as the `effectiveDate` comment.
+- **The selection prompt must not always offer an alternative.** Told to offer the
+  closest document unconditionally, the model suggested adapting a Professional
+  Services Agreement into a residential lease, and a partnership agreement into a
+  prenup — confident, useless, and close to the legal advice it is told not to give.
+  The prompt now says to offer one only when it genuinely fits, and otherwise to
+  stop. Keep both halves: without the counterweight it refuses everything and stops
+  offering the PSA to someone papering a freelance engagement, which the ticket asks
+  for.
+- **Never put `lineHeight` on the PDF `Page` style.** It did nothing there —
+  @react-pdf 4.5.1 does not inherit it to the text — while silently breaking the
+  `fixed` footer, which simply never drew, and past two pages threw "unsupported
+  number: -9.09e21" from a garbage y coordinate. That is why PL-6's longer documents
+  crashed the PDF and why no prelegal PDF has ever had a page footer. Measured
+  against the library alone: lineHeight on the Page gives 0 footers on 3 pages,
+  without it 6 of 6. If you want looser lines, set it on the text styles.
+- **The PDF list parser takes numbers from the source**, not from position — the
+  corpus separates clauses with blank lines, so position-derived numbering made every
+  clause render as "1.". It also has to handle indented sub-items (`    1.`, `a.`),
+  which nine of the templates use.
 - **`reasoning_effort` is `"medium"`, not the skill's `"low"`.** At low effort the
   model replies with a bare acknowledgement and forgets to ask the next question
   (measured 1/5 vs 5/5 at medium). Don't lower it without re-checking that.
@@ -119,9 +172,12 @@ Conventions worth knowing:
   `docker-compose.yml`. `.env` is both git- and docker-ignored, so it is never baked
   into the image; `config.py` loads it for local dev.
 
-Known pre-existing bugs in the MNDA output (untouched by PL-4 and PL-5, both scoped
-elsewhere):
+Known bugs in the rendered output:
 
-- Every numbered clause renders as "1." in the PDF instead of 1–11.
-- The Purpose value is spliced mid-sentence into clause 1, producing ungrammatical
-  text.
+- The Purpose value is spliced mid-sentence into MNDA clause 1, producing
+  ungrammatical text ("in connection with the Evaluating a partnership which…").
+  Pre-existing; PL-6 was scoped away from it.
+- Markdown links inside an italic run render as literal `[CC BY 4.0](https://…)` in
+  the PDF, because `parseInline` matches the italic first and does not recurse. Hits
+  the attribution line on every document. Cosmetic, pre-existing.
+- ~~Every numbered clause renders as "1."~~ — fixed in PL-6.

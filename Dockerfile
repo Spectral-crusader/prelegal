@@ -21,10 +21,12 @@ COPY backend/pyproject.toml backend/uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 COPY backend/app ./app
+COPY documents.json ./documents.json
 COPY --from=frontend /build/out ./static
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PRELEGAL_STATIC_DIR=/app/static \
+    PRELEGAL_DOCUMENTS_PATH=/app/documents.json \
     PRELEGAL_DB_PATH=/app/data/prelegal.db
 
 EXPOSE 8000
