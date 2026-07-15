@@ -10,8 +10,9 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const SOURCE = path.resolve(here, '..', '..', 'templates');
 const DEST = path.resolve(here, '..', 'public', 'templates');
 
-// The MNDA is the only document the prototype renders today.
-const WANTED = /^Mutual-NDA.*\.md$/;
+// Every Markdown file in the corpus is a document we render (LICENSE is not
+// Markdown, so the extension filter is enough).
+const WANTED = /\.md$/;
 
 const names = (await readdir(SOURCE)).filter((n) => WANTED.test(n));
 if (names.length === 0) {

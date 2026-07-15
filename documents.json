@@ -1,0 +1,770 @@
+{
+  "$comment": "The documents prelegal can draft. catalog.json describes the corpus as shipped by Common Paper; this file is the product's view of it — which documents we support, and which Variables the intake chat asks about. Template filenames must match catalog.json.",
+  "documents": [
+    {
+      "id": "mutual-nda",
+      "name": "Mutual Non-Disclosure Agreement",
+      "description": "A two-way NDA for sharing confidential information while parties explore working together.",
+      "aliases": ["NDA", "mutual NDA", "MNDA", "non-disclosure agreement", "confidentiality agreement"],
+      "renderer": "mnda",
+      "templates": ["Mutual-NDA-coverpage.md", "Mutual-NDA.md"],
+      "fields": [
+        {
+          "name": "purpose",
+          "label": "Purpose",
+          "guide": "Why the parties are sharing information, as one sentence.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "effectiveDate",
+          "label": "Effective Date",
+          "guide": "The date the NDA starts.",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "termMode",
+          "label": "MNDA Term",
+          "guide": "\"years\" if the NDA expires after a fixed number of years, \"until_terminated\" if it runs until a party ends it.",
+          "type": "enum",
+          "options": ["years", "until_terminated"],
+          "required": true
+        },
+        {
+          "name": "termYears",
+          "label": "MNDA Term (years)",
+          "guide": "Whole years the NDA runs for. Only when termMode is \"years\".",
+          "type": "integer",
+          "required": false,
+          "requiredWhen": { "field": "termMode", "equals": "years" }
+        },
+        {
+          "name": "confidentialityMode",
+          "label": "Term of Confidentiality",
+          "guide": "\"years\" for a fixed period, \"perpetuity\" for forever.",
+          "type": "enum",
+          "options": ["years", "perpetuity"],
+          "required": true
+        },
+        {
+          "name": "confidentialityYears",
+          "label": "Term of Confidentiality (years)",
+          "guide": "Whole years confidentiality lasts. Only when confidentialityMode is \"years\".",
+          "type": "integer",
+          "required": false,
+          "requiredWhen": { "field": "confidentialityMode", "equals": "years" }
+        },
+        {
+          "name": "governingLaw",
+          "label": "Governing Law",
+          "guide": "A US state name alone, e.g. \"Delaware\". Not \"Delaware law\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "jurisdiction",
+          "label": "Jurisdiction",
+          "guide": "The courts' city or county and state, e.g. \"New Castle County, Delaware\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "modifications",
+          "label": "MNDA Modifications",
+          "guide": "Any changes to the standard terms. Omit unless the user asks for one.",
+          "type": "string",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "cloud-service-agreement",
+      "name": "Cloud Service Agreement",
+      "description": "For selling or buying a cloud software or SaaS product on a subscription.",
+      "aliases": ["CSA", "SaaS agreement", "cloud agreement", "subscription agreement", "software as a service"],
+      "renderer": "generic",
+      "templates": ["CSA.md"],
+      "fields": [
+        {
+          "name": "provider",
+          "label": "Provider",
+          "guide": "Full legal name of the company providing the cloud service, e.g. \"Acme, Inc.\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "customer",
+          "label": "Customer",
+          "guide": "Full legal name of the company buying the cloud service.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "effectiveDate",
+          "label": "Effective Date",
+          "guide": "The date the agreement starts.",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "subscriptionPeriod",
+          "label": "Subscription Period",
+          "guide": "The length of one subscription term as a noun phrase, e.g. \"12 months\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "paymentProcess",
+          "label": "Payment Process",
+          "guide": "How and when the Customer pays, e.g. \"annually in advance, by invoice, net 30\".",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "technicalSupport",
+          "label": "Technical Support",
+          "guide": "What support the Provider gives, e.g. \"email support during business hours\". Leave unset if there is none.",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "generalCapAmount",
+          "label": "General Cap Amount",
+          "guide": "The cap on each party's total liability, e.g. \"fees paid in the 12 months before the claim\" or \"$100,000\".",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "governingLaw",
+          "label": "Governing Law",
+          "guide": "The law that governs, as a phrase that reads after \"The\", e.g. \"laws of the State of Delaware\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "chosenCourts",
+          "label": "Chosen Courts",
+          "guide": "The courts that hear disputes, as a phrase that reads after \"in the\", e.g. \"state and federal courts located in New Castle County, Delaware\".",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "design-partner-agreement",
+      "name": "Design Partner Agreement",
+      "description": "For giving an early customer product access in exchange for feedback.",
+      "aliases": ["design partner", "early access agreement", "beta partner", "feedback agreement"],
+      "renderer": "generic",
+      "templates": ["Design-Partner-Agreement.md"],
+      "fields": [
+        {
+          "name": "provider",
+          "label": "Provider",
+          "guide": "Full legal name of the company building the product.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "partner",
+          "label": "Partner",
+          "guide": "Full legal name of the design partner.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "effectiveDate",
+          "label": "Effective Date",
+          "guide": "The date the agreement starts.",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "term",
+          "label": "Term",
+          "guide": "How long the partnership runs, e.g. \"6 months from the Effective Date\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "program",
+          "label": "Program",
+          "guide": "What the partner does in the program, e.g. \"weekly feedback calls and access to beta builds\".",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "fees",
+          "label": "Fees",
+          "guide": "What the Partner pays, if anything. Design partners usually pay nothing — leave unset if so.",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "noticeAddress",
+          "label": "Notice Address",
+          "guide": "Where legal notices go for each party — an email or postal address.",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "governingLaw",
+          "label": "Governing Law",
+          "guide": "The law that governs, as a phrase that reads after \"The\", e.g. \"laws of the State of Delaware\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "chosenCourts",
+          "label": "Chosen Courts",
+          "guide": "The courts that hear disputes, as a phrase that reads after \"in the\", e.g. \"state and federal courts located in New Castle County, Delaware\".",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "service-level-agreement",
+      "name": "Service Level Agreement",
+      "description": "Uptime, support response and service credit terms. Attaches to a Cloud Service Agreement.",
+      "aliases": ["SLA", "uptime agreement", "service levels", "support agreement"],
+      "renderer": "generic",
+      "templates": ["SLA.md"],
+      "fields": [
+        {
+          "name": "provider",
+          "label": "Provider",
+          "guide": "Full legal name of the company providing the cloud service.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "customer",
+          "label": "Customer",
+          "guide": "Full legal name of the customer.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "subscriptionPeriod",
+          "label": "Subscription Period",
+          "guide": "The length of one subscription term as a noun phrase, e.g. \"12 months\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "targetUptime",
+          "label": "Target Uptime",
+          "guide": "The monthly availability target as a percentage, e.g. \"99.9%\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "uptimeCredit",
+          "label": "Uptime Credit",
+          "guide": "The credit owed when uptime misses the target, e.g. \"5% of monthly fees for each 1% below Target Uptime\".",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "scheduledDowntime",
+          "label": "Scheduled Downtime",
+          "guide": "Maintenance windows that do not count against uptime, e.g. \"Sundays 02:00-04:00 UTC, with 48 hours notice\".",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "supportChannel",
+          "label": "Support Channel",
+          "guide": "Where the Customer sends support requests, e.g. \"support@acme.com\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "targetResponseTime",
+          "label": "Target Response Time",
+          "guide": "How quickly the Provider acknowledges a support request, e.g. \"1 business day\".",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "responseTimeCredit",
+          "label": "Response Time Credit",
+          "guide": "The credit owed when a response misses the target, e.g. \"2% of monthly fees per missed request\".",
+          "type": "string",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "professional-services-agreement",
+      "name": "Professional Services Agreement",
+      "description": "For consulting, implementation or training work delivered under a statement of work.",
+      "aliases": ["PSA", "consulting agreement", "services agreement", "SOW", "statement of work", "contractor agreement"],
+      "renderer": "generic",
+      "templates": ["PSA.md"],
+      "fields": [
+        {
+          "name": "provider",
+          "label": "Provider",
+          "guide": "Full legal name of the company doing the work.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "customer",
+          "label": "Customer",
+          "guide": "Full legal name of the company buying the work.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "effectiveDate",
+          "label": "Effective Date",
+          "guide": "The date the agreement starts.",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "sowTerm",
+          "label": "SOW Term",
+          "guide": "How long the statement of work runs, e.g. \"from the Effective Date until the Deliverables are accepted\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "fees",
+          "label": "Fees",
+          "guide": "What the Customer pays, e.g. \"$50,000 fixed fee\" or \"$200 per hour\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "paymentPeriod",
+          "label": "Payment Period",
+          "guide": "How long the Customer has to pay an invoice, e.g. \"30 days\".",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "deliverables",
+          "label": "Deliverables",
+          "guide": "What the Provider hands over, e.g. \"a migration plan and a configured staging environment\".",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "generalCapAmount",
+          "label": "General Cap Amount",
+          "guide": "The cap on each party's total liability, e.g. \"fees paid under the SOW\" or \"$100,000\".",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "governingLaw",
+          "label": "Governing Law",
+          "guide": "The law that governs, as a phrase that reads after \"The\", e.g. \"laws of the State of Delaware\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "chosenCourts",
+          "label": "Chosen Courts",
+          "guide": "The courts that hear disputes, as a phrase that reads after \"in the\", e.g. \"state and federal courts located in New Castle County, Delaware\".",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "data-processing-agreement",
+      "name": "Data Processing Agreement",
+      "description": "GDPR-style terms for a vendor processing personal data on a customer's behalf.",
+      "aliases": ["DPA", "GDPR agreement", "data protection agreement", "processor agreement", "privacy agreement"],
+      "renderer": "generic",
+      "templates": ["DPA.md"],
+      "fields": [
+        {
+          "name": "provider",
+          "label": "Provider",
+          "guide": "Full legal name of the vendor processing the personal data.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "customer",
+          "label": "Customer",
+          "guide": "Full legal name of the company whose personal data is processed.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "agreement",
+          "label": "Agreement",
+          "guide": "The contract this DPA attaches to, e.g. \"the Cloud Service Agreement dated 1 March 2026\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "natureAndPurposeOfProcessing",
+          "label": "Nature and Purpose of Processing",
+          "guide": "Why the personal data is processed, e.g. \"hosting and supporting the Customer's CRM records\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "categoriesOfPersonalData",
+          "label": "Categories of Personal Data",
+          "guide": "What kinds of personal data, e.g. \"names, email addresses, IP addresses\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "categoriesOfDataSubjects",
+          "label": "Categories of Data Subjects",
+          "guide": "Whose data it is, e.g. \"the Customer's employees and end users\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "durationOfProcessing",
+          "label": "Duration of Processing",
+          "guide": "How long processing lasts, e.g. \"for the term of the Agreement\".",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "providerSecurityContact",
+          "label": "Provider Security Contact",
+          "guide": "Where the Customer reports security issues, e.g. \"security@acme.com\".",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "governingMemberState",
+          "label": "Governing Member State",
+          "guide": "The EEA member state whose law governs, e.g. \"Ireland\". Only relevant when the GDPR applies.",
+          "type": "string",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "software-license-agreement",
+      "name": "Software License Agreement",
+      "description": "For licensing on-premise or downloadable software.",
+      "aliases": ["SLA software", "license agreement", "software license", "on-premise agreement", "EULA"],
+      "renderer": "generic",
+      "templates": ["Software-License-Agreement.md"],
+      "fields": [
+        {
+          "name": "provider",
+          "label": "Provider",
+          "guide": "Full legal name of the company licensing out the software.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "customer",
+          "label": "Customer",
+          "guide": "Full legal name of the company licensing the software.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "effectiveDate",
+          "label": "Effective Date",
+          "guide": "The date the licence starts.",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "subscriptionPeriod",
+          "label": "Subscription Period",
+          "guide": "The length of one licence term as a noun phrase, e.g. \"12 months\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "licenseLimits",
+          "label": "License Limits",
+          "guide": "How much use the licence allows, e.g. \"up to 50 named users on one production instance\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "paymentProcess",
+          "label": "Payment Process",
+          "guide": "How and when the Customer pays, e.g. \"annually in advance, by invoice, net 30\".",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "generalCapAmount",
+          "label": "General Cap Amount",
+          "guide": "The cap on each party's total liability, e.g. \"fees paid in the 12 months before the claim\".",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "governingLaw",
+          "label": "Governing Law",
+          "guide": "The law that governs, as a phrase that reads after \"The\", e.g. \"laws of the State of Delaware\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "chosenCourts",
+          "label": "Chosen Courts",
+          "guide": "The courts that hear disputes, as a phrase that reads after \"in the\", e.g. \"state and federal courts located in New Castle County, Delaware\".",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "partnership-agreement",
+      "name": "Partnership Agreement",
+      "description": "For a strategic partnership: scope, obligations, brand use and revenue share.",
+      "aliases": ["partnership", "reseller agreement", "channel partner", "referral agreement", "strategic partnership"],
+      "renderer": "generic",
+      "templates": ["Partnership-Agreement.md"],
+      "fields": [
+        {
+          "name": "company",
+          "label": "Company",
+          "guide": "Full legal name of the company whose product is being partnered on.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "partner",
+          "label": "Partner",
+          "guide": "Full legal name of the partner.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "effectiveDate",
+          "label": "Effective Date",
+          "guide": "The date the partnership starts.",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "endDate",
+          "label": "End Date",
+          "guide": "The date the partnership ends.",
+          "type": "date",
+          "required": false
+        },
+        {
+          "name": "obligations",
+          "label": "Obligations",
+          "guide": "What each party commits to do, e.g. \"Partner will resell the Company's product; Company will provide training and leads\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "territory",
+          "label": "Territory",
+          "guide": "Where the partnership applies, e.g. \"the United States and Canada\". Leave unset if worldwide.",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "paymentSchedule",
+          "label": "Payment Schedule",
+          "guide": "What is paid and when, e.g. \"20% of net revenue, paid quarterly in arrears\".",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "governingLaw",
+          "label": "Governing Law",
+          "guide": "The law that governs, as a phrase that reads after \"The\", e.g. \"laws of the State of Delaware\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "chosenCourts",
+          "label": "Chosen Courts",
+          "guide": "The courts that hear disputes, as a phrase that reads after \"in the\", e.g. \"state and federal courts located in New Castle County, Delaware\".",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "pilot-agreement",
+      "name": "Pilot Agreement",
+      "description": "A short trial letting a prospective customer evaluate a product before committing.",
+      "aliases": ["pilot", "trial agreement", "evaluation agreement", "POC", "proof of concept"],
+      "renderer": "generic",
+      "templates": ["Pilot-Agreement.md"],
+      "fields": [
+        {
+          "name": "provider",
+          "label": "Provider",
+          "guide": "Full legal name of the company providing the product.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "customer",
+          "label": "Customer",
+          "guide": "Full legal name of the company running the pilot.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "effectiveDate",
+          "label": "Effective Date",
+          "guide": "The date the pilot starts.",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "pilotPeriod",
+          "label": "Pilot Period",
+          "guide": "How long the pilot runs, e.g. \"60 days from the Effective Date\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "generalCapAmount",
+          "label": "General Cap Amount",
+          "guide": "The cap on each party's total liability, e.g. \"$10,000\". Pilots are often unpaid, so a small fixed amount is common.",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "noticeAddress",
+          "label": "Notice Address",
+          "guide": "Where legal notices go for each party — an email or postal address.",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "governingLaw",
+          "label": "Governing Law",
+          "guide": "The law that governs, as a phrase that reads after \"The\", e.g. \"laws of the State of Delaware\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "chosenCourts",
+          "label": "Chosen Courts",
+          "guide": "The courts that hear disputes, as a phrase that reads after \"in the\", e.g. \"state and federal courts located in New Castle County, Delaware\".",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "business-associate-agreement",
+      "name": "Business Associate Agreement",
+      "description": "HIPAA terms for a vendor handling protected health information for a covered entity.",
+      "aliases": ["BAA", "HIPAA agreement", "business associate", "PHI agreement", "healthcare agreement"],
+      "renderer": "generic",
+      "templates": ["BAA.md"],
+      "fields": [
+        {
+          "name": "provider",
+          "label": "Provider",
+          "guide": "Full legal name of the business associate — the vendor handling the PHI.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "company",
+          "label": "Company",
+          "guide": "Full legal name of the covered entity whose PHI is handled.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "baaEffectiveDate",
+          "label": "BAA Effective Date",
+          "guide": "The date the BAA starts.",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "agreement",
+          "label": "Agreement",
+          "guide": "The contract this BAA attaches to, e.g. \"the Cloud Service Agreement dated 1 March 2026\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "breachNotificationPeriod",
+          "label": "Breach Notification Period",
+          "guide": "How quickly the Provider must report a breach, e.g. \"5 business days\".",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "limitations",
+          "label": "Limitations",
+          "guide": "Restrictions on what the Provider may do with PHI — subcontracting, offshoring, de-identifying, aggregating. Leave unset if there are none.",
+          "type": "string",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "ai-addendum",
+      "name": "AI Addendum",
+      "description": "AI-specific terms — model training, input and output ownership. Attaches to a Cloud Service or Software License Agreement.",
+      "aliases": ["AI terms", "AI addendum", "machine learning addendum", "LLM terms", "AI rider"],
+      "renderer": "generic",
+      "templates": ["AI-Addendum.md"],
+      "fields": [
+        {
+          "name": "provider",
+          "label": "Provider",
+          "guide": "Full legal name of the company providing the AI services.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "customer",
+          "label": "Customer",
+          "guide": "Full legal name of the company using the AI services.",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "trainingData",
+          "label": "Training Data",
+          "guide": "What data the Provider may train models on. Leave unset if training is not permitted — that is the template's default.",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "trainingPurposes",
+          "label": "Training Purposes",
+          "guide": "What the Provider may train for, e.g. \"improving the Customer's own dedicated model\". Only when Training Data is set.",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "trainingRestrictions",
+          "label": "Training Restrictions",
+          "guide": "Limits on training, e.g. \"no training on Personal Data; no sharing of trained models with other customers\".",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "improvementRestrictions",
+          "label": "Improvement Restrictions",
+          "guide": "Limits on using Input and Output to improve the AI system short of training, e.g. \"aggregated and de-identified data only\".",
+          "type": "string",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

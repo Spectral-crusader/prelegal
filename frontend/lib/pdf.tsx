@@ -1,15 +1,25 @@
-// PDF generation for the Mutual NDA, in the browser.
+// PDF generation, in the browser.
 //
 // Why we don't render the Markdown verbatim: @react-pdf/renderer draws layouts
 // directly; we want proper headings, paragraphs, and page breaks in the PDF
-// rather than a pre-formatted text dump. So we tokenize the rendered Markdown
-// into a simple AST (headings, paragraphs, lists, tables, hr) and pass it to a
-// small renderer that uses @react-pdf primitives.
+// rather than a pre-formatted text dump. So `markdown.ts` tokenizes the
+// rendered Markdown into a simple AST and this file draws it with @react-pdf
+// primitives.
 
 import { Document, Page, StyleSheet, Text, View, pdf } from '@react-pdf/renderer';
 import React from 'react';
-import { renderNda } from './render';
-import type { MndaFormValues } from './types';
+import { renderDocument } from './render';
+import { parseMarkdown, type Block, type InlineNode } from './markdown';
+import type { DocumentSpec, Fields } from './types';
+
+// NB: there is deliberately no `lineHeight` on `page`. It used to be there and
+// was doing nothing — @react-pdf 4.5.1 does not inherit it to the text — while
+// silently breaking the `fixed` footer: no error, the footer just never drew,
+// and past two pages it threw "unsupported number: -9.09e21" from a garbage y.
+// Verified against the library alone: lineHeight on the Page gives 0 footers on
+// 3 pages, without it 6 of 6. Removing it leaves the text exactly as it always
+// rendered and gets the footer back. If you want looser lines, set lineHeight
+// on the text styles below — not on the Page, and not on the footer.
 
 const styles = StyleSheet.create({
   page: {
@@ -18,12 +28,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 64,
     fontSize: 11,
     fontFamily: 'Helvetica',
-    lineHeight: 1.4,
     color: '#111',
   },
   h1: { fontSize: 18, fontFamily: 'Helvetica-Bold', marginBottom: 8 },
-  h2: { fontSize: 13, fontFamily: 'Helvetica-Bold', marginTop: 14, marginBottom: 6 },
-  h3: { fontSize: 11, fontFamily: 'Helvetica-Bold', marginTop: 10, marginBottom: 4 },
+  h2: {
+    fontSize: 13,
+    fontFamily: 'Helvetica-Bold',
+    marginTop: 14,
+    marginBottom: 6,
+  },
+  h3: {
+    fontSize: 11,
+    fontFamily: 'Helvetica-Bold',
+    marginTop: 10,
+    marginBottom: 4,
+  },
   p: { marginBottom: 6 },
   hr: {
     borderBottomWidth: 1,
@@ -31,7 +50,10 @@ const styles = StyleSheet.create({
     marginVertical: 14,
   },
   li: { flexDirection: 'row', marginBottom: 3 },
-  bullet: { width: 14 },
+  // Wide enough for the corpus's longest marker ("10."). The number is drawn in
+  // its own column so wrapped lines align under the text, not under the marker.
+  marker: { width: 22 },
+  liText: { flex: 1 },
   table: {
     borderTopWidth: 1,
     borderBottomWidth: 1,
@@ -60,145 +82,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-
-type InlineNode =
-  | { kind: 'text'; text: string }
-  | { kind: 'bold'; text: string }
-  | { kind: 'italic'; text: string }
-  | { kind: 'link'; text: string; href: string };
-
-type Block =
-  | { kind: 'h1' | 'h2' | 'h3'; inlines: InlineNode[] }
-  | { kind: 'p'; inlines: InlineNode[] }
-  | { kind: 'ul'; items: InlineNode[][] }
-  | { kind: 'ol'; items: InlineNode[][] }
-  | { kind: 'table'; rows: InlineNode[][][] }
-  | { kind: 'hr' };
-
-// Minimal Markdown tokenizer scoped to the structure produced by `renderNda`.
-// Not a general-purpose parser — that would add a dependency for no gain on
-// this fixed-template corpus.
-function parseInline(input: string): InlineNode[] {
-  const out: InlineNode[] = [];
-  let i = 0;
-  let buf = '';
-  const flush = () => {
-    if (buf) {
-      out.push({ kind: 'text', text: buf });
-      buf = '';
-    }
-  };
-  while (i < input.length) {
-    const rest = input.slice(i);
-    const boldMatch = rest.match(/^\*\*([^*]+)\*\*/);
-    const italicMatch = rest.match(/^_([^_]+)_/);
-    const linkMatch = rest.match(/^\[([^\]]+)\]\(([^)]+)\)/);
-    if (boldMatch) {
-      flush();
-      out.push({ kind: 'bold', text: boldMatch[1] });
-      i += boldMatch[0].length;
-    } else if (italicMatch) {
-      flush();
-      out.push({ kind: 'italic', text: italicMatch[1] });
-      i += italicMatch[0].length;
-    } else if (linkMatch) {
-      flush();
-      out.push({ kind: 'link', text: linkMatch[1], href: linkMatch[2] });
-      i += linkMatch[0].length;
-    } else {
-      buf += input[i];
-      i += 1;
-    }
-  }
-  flush();
-  return out;
-}
-
-function parseMarkdown(md: string): Block[] {
-  const blocks: Block[] = [];
-  const lines = md.split('\n');
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i];
-
-    if (line.trim() === '---') {
-      blocks.push({ kind: 'hr' });
-      i += 1;
-      continue;
-    }
-    const heading = line.match(/^(#{1,3})\s+(.*)$/);
-    if (heading) {
-      const level = heading[1].length as 1 | 2 | 3;
-      blocks.push({ kind: `h${level}` as 'h1' | 'h2' | 'h3', inlines: parseInline(heading[2]) });
-      i += 1;
-      continue;
-    }
-    if (line.startsWith('- ')) {
-      const items: InlineNode[][] = [];
-      while (i < lines.length && lines[i].startsWith('- ')) {
-        items.push(parseInline(lines[i].slice(2)));
-        i += 1;
-      }
-      blocks.push({ kind: 'ul', items });
-      continue;
-    }
-    if (/^\d+\.\s+/.test(line)) {
-      const items: InlineNode[][] = [];
-      while (i < lines.length && /^\d+\.\s+/.test(lines[i])) {
-        items.push(parseInline(lines[i].replace(/^\d+\.\s+/, '')));
-        i += 1;
-      }
-      blocks.push({ kind: 'ol', items });
-      continue;
-    }
-    if (line.startsWith('||') && i + 1 < lines.length && lines[i + 1].startsWith('|:')) {
-      const rows: InlineNode[][][] = [];
-      // First row uses `||` for cell separators; subsequent rows use `|`.
-      rows.push(
-        line
-          .trim()
-          .replace(/^\|\||\|\s*$/g, '')
-          .split('||')
-          .map((c) => c.trim())
-          .map(parseInline),
-      );
-      i += 2;
-      while (i < lines.length && lines[i].startsWith('|')) {
-        const cells = lines[i]
-          .trim()
-          .replace(/^\||\|\s*$/g, '')
-          .split('|')
-          .map((c) => c.trim())
-          .map(parseInline);
-        rows.push(cells);
-        i += 1;
-      }
-      blocks.push({ kind: 'table', rows });
-      continue;
-    }
-    if (line.trim() === '') {
-      i += 1;
-      continue;
-    }
-    // paragraph: collect contiguous non-empty, non-special lines
-    const para: string[] = [line];
-    i += 1;
-    while (
-      i < lines.length &&
-      lines[i].trim() !== '' &&
-      !lines[i].match(/^#{1,3}\s/) &&
-      !lines[i].startsWith('- ') &&
-      !/^\d+\.\s+/.test(lines[i]) &&
-      !lines[i].startsWith('||') &&
-      !lines[i].trim().startsWith('---')
-    ) {
-      para.push(lines[i]);
-      i += 1;
-    }
-    blocks.push({ kind: 'p', inlines: parseInline(para.join(' ')) });
-  }
-  return blocks;
-}
 
 function Inline({ nodes }: { nodes: InlineNode[] }) {
   return (
@@ -246,27 +129,14 @@ function BlockView({ block }: { block: Block }) {
       );
     case 'hr':
       return <View style={styles.hr} />;
-    case 'ul':
+    case 'list':
       return (
         <View>
           {block.items.map((item, idx) => (
-            <View key={idx} style={styles.li}>
-              <Text style={styles.bullet}>•</Text>
-              <Text style={{ flex: 1 }}>
-                <Inline nodes={item} />
-              </Text>
-            </View>
-          ))}
-        </View>
-      );
-    case 'ol':
-      return (
-        <View>
-          {block.items.map((item, idx) => (
-            <View key={idx} style={styles.li}>
-              <Text style={styles.bullet}>{idx + 1}.</Text>
-              <Text style={{ flex: 1 }}>
-                <Inline nodes={item} />
+            <View key={idx} style={[styles.li, { marginLeft: item.depth * 18 }]}>
+              <Text style={styles.marker}>{item.marker}</Text>
+              <Text style={styles.liText}>
+                <Inline nodes={item.inlines} />
               </Text>
             </View>
           ))}
@@ -289,10 +159,10 @@ function BlockView({ block }: { block: Block }) {
   }
 }
 
-function NdaDocument({ markdown }: { markdown: string }) {
+function AgreementDocument({ spec, markdown }: { spec: DocumentSpec; markdown: string }) {
   const blocks = parseMarkdown(markdown);
   return (
-    <Document title="Mutual Non-Disclosure Agreement" author="prelegal" subject="Mutual NDA">
+    <Document title={spec.name} author="prelegal" subject={spec.name}>
       <Page size="LETTER" style={styles.page}>
         {blocks.map((block, idx) => (
           <BlockView key={idx} block={block} />
@@ -301,7 +171,7 @@ function NdaDocument({ markdown }: { markdown: string }) {
           style={styles.footer}
           fixed
           render={({ pageNumber, totalPages }) =>
-            `Mutual NDA — prelegal prototype · Page ${pageNumber} of ${totalPages} · Based on Common Paper MNDA v1.0 (CC BY 4.0)`
+            `${spec.name} — prelegal prototype · Page ${pageNumber} of ${totalPages} · Based on a Common Paper template (CC BY 4.0)`
           }
         />
       </Page>
@@ -309,30 +179,12 @@ function NdaDocument({ markdown }: { markdown: string }) {
   );
 }
 
-// Fail fast with a clear message rather than producing a half-filled NDA.
-export function validate(values: MndaFormValues): string | null {
-  const required: (keyof MndaFormValues)[] = [
-    'purpose',
-    'effectiveDate',
-    'governingLaw',
-    'jurisdiction',
-  ];
-  for (const k of required) {
-    if (!values[k] || String(values[k]).trim() === '') {
-      return `Missing required field: ${k}`;
-    }
-  }
-  const inRange = (n: number) => Number.isInteger(n) && n >= 1 && n <= 99;
-  if (values.termMode === 'years' && !inRange(values.termYears)) {
-    return 'termYears must be an integer 1–99';
-  }
-  if (values.confidentialityMode === 'years' && !inRange(values.confidentialityYears)) {
-    return 'confidentialityYears must be an integer 1–99';
-  }
-  return null;
+export async function buildPdfBlob(spec: DocumentSpec, fields: Fields): Promise<Blob> {
+  const markdown = await renderDocument(spec, fields);
+  return pdf(<AgreementDocument spec={spec} markdown={markdown} />).toBlob();
 }
 
-export async function buildNdaPdfBlob(values: MndaFormValues): Promise<Blob> {
-  const markdown = await renderNda(values);
-  return pdf(<NdaDocument markdown={markdown} />).toBlob();
+// A filename the user will recognise in their downloads folder.
+export function pdfFilename(spec: DocumentSpec): string {
+  return `${spec.name.replace(/[^a-z0-9]+/gi, '-')}.pdf`;
 }
