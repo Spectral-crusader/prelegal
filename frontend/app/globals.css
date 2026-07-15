@@ -1,5 +1,36 @@
 :root {
   color-scheme: light;
+
+  /* Brand palette. The five below are the product's colours; everything else
+     here is derived from them or is neutral scaffolding. */
+  --navy: #032147;
+  --blue: #209dd7;
+  --purple: #753991;
+  --yellow: #ecad0a;
+  --gray-text: #888888;
+
+  /* Derived: hovers and tints. Kept as tokens so a shade never gets guessed at
+     a call site. */
+  --purple-hover: #63307b;
+  --purple-disabled: #c4b5cd;
+  --blue-tint: #eaf6fc;
+  --yellow-tint: #fdf6e3;
+  --navy-tint: #f2f5f9;
+
+  --surface: #ffffff;
+  --canvas: #f4f5f7;
+  --border: #e2e5ea;
+  --border-strong: #d1d5db;
+  --text: #111827;
+
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow-sm: 0 1px 2px rgba(3, 33, 71, 0.05);
+  --shadow: 0 1px 3px rgba(3, 33, 71, 0.08), 0 8px 24px rgba(3, 33, 71, 0.04);
+
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
+    'Liberation Mono', monospace;
 }
 
 * {
@@ -10,12 +41,19 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: #f4f5f7;
-  color: #111827;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  background: var(--canvas);
+  color: var(--text);
+  font-family: var(--font);
   -webkit-font-smoothing: antialiased;
 }
 
 a {
-  color: #1d4ed8;
+  color: var(--blue);
+}
+
+/* One focus treatment for everything interactive, rather than each component
+   inventing its own. */
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }

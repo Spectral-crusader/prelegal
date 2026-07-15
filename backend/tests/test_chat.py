@@ -26,7 +26,10 @@ def temp_db(tmp_path, monkeypatch):
 
 @pytest.fixture
 def client(temp_db):
+    """A signed-in client: /api/chat is signed-in only, so every endpoint test
+    needs an account behind it."""
     with TestClient(app) as c:
+        c.post("/api/auth/signup", json={"email": "ada@example.com", "password": "a long password"})
         yield c
 
 

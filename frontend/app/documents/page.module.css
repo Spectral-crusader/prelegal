@@ -1,0 +1,140 @@
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.title {
+  margin: 0 0 0.375rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--navy);
+}
+
+.subtitle {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--gray-text);
+  font-size: 0.9375rem;
+}
+
+.newButton {
+  flex-shrink: 0;
+  padding: 0.5625rem 1rem;
+  border-radius: 6px;
+  background: var(--purple);
+  color: #fff;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.newButton:hover {
+  background: var(--purple-hover);
+  color: #fff;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.list li + li .row {
+  border-top: 1px solid var(--border);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1rem 1.25rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.row:hover {
+  background: var(--navy-tint);
+}
+
+.name {
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.meta {
+  font-size: 0.875rem;
+  color: var(--gray-text);
+}
+
+.open {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--blue);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 4rem 1.5rem;
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.muted {
+  margin: 0;
+  color: var(--gray-text);
+  font-size: 0.9375rem;
+}
+
+.error {
+  margin: 0 0 1rem;
+  padding: 0.625rem 0.8rem;
+  border-radius: 6px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 700px) {
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .row {
+    grid-template-columns: 1fr auto;
+    gap: 0.25rem 1rem;
+  }
+
+  .meta {
+    grid-column: 1;
+  }
+
+  .open {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+  }
+}

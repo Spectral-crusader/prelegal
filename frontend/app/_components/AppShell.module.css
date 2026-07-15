@@ -1,0 +1,131 @@
+.shell {
+  min-height: 100vh;
+}
+
+/* Holds the page still while /api/me answers, so the layout does not jump when
+   the shell appears. */
+.checking {
+  min-height: 100vh;
+}
+
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.headerInner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  height: 3.5rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.brand {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--navy);
+  text-decoration: none;
+}
+
+.nav {
+  display: flex;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.link,
+.linkActive {
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.link {
+  color: var(--gray-text);
+}
+
+.link:hover {
+  background: var(--navy-tint);
+  color: var(--navy);
+}
+
+.linkActive {
+  background: var(--blue-tint);
+  color: var(--blue);
+  font-weight: 600;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.email {
+  font-size: 0.875rem;
+  color: var(--gray-text);
+}
+
+.signOut {
+  padding: 0.4rem 0.75rem;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--navy);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.signOut:hover {
+  background: var(--navy-tint);
+  border-color: var(--navy);
+}
+
+/* The one place the accent yellow earns its keep: the disclaimer has to catch
+   the eye on every screen without reading as an error. */
+.disclaimer {
+  margin: 0;
+  padding: 0.625rem 1.5rem;
+  background: var(--yellow-tint);
+  border-bottom: 1px solid var(--yellow);
+  color: #6b4c02;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.disclaimer strong {
+  color: #4a3401;
+}
+
+.main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+@media (max-width: 700px) {
+  .headerInner {
+    height: auto;
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+  }
+
+  .nav {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .email {
+    display: none;
+  }
+}

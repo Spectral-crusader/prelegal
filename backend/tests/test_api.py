@@ -27,17 +27,17 @@ def test_health_reports_ok(client):
     assert res.json() == {"status": "ok", "database": "ok"}
 
 
-def test_me_returns_unauthenticated_placeholder(client):
-    res = client.get("/api/me")
-    assert res.status_code == 200
-    assert res.json()["authenticated"] is False
+def test_health_needs_no_session(client):
+    """The start scripts poll this before anyone has signed in."""
+    assert client.get("/api/health").status_code == 200
 
 
-def test_init_db_creates_users_table(temp_db):
+@pytest.mark.parametrize("table", ["users", "sessions", "drafts"])
+def test_init_db_creates_table(temp_db, table):
     db.init_db(temp_db)
     with sqlite3.connect(temp_db) as conn:
         row = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='users'"
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,)
         ).fetchone()
     assert row is not None
 
